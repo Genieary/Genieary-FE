@@ -1,25 +1,18 @@
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar/Navbar';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <BrowserRouter>
+      <Navbar />
+      <Routes>
+        <Route path="/recommend" element={<div>추천 페이지</div>} />
+        <Route path="/calendar" element={<div>캘린더 페이지</div>} />
+        <Route path="/friends" element={<div>친구 페이지</div>} />
+        <Route path="/mypage" element={<div>마이페이지</div>} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
