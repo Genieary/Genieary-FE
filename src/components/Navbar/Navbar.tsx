@@ -1,13 +1,16 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaUser } from 'react-icons/fa';
+import UserIcon from '../Icons/UserIcon';
 import {
   NavbarContainer,
   Logo,
   NavCenter,
   NavRight,
   NavItem,
-  Underline
+  Underline,
+  TopLineWrapper,
+  BottomLineWrapper,
+  Line
 } from './Navbar.styles';
 
 const navItems = [
@@ -18,11 +21,16 @@ const navItems = [
 
 const Navbar = () => {
   const location = useLocation();
-  const UserIcon = FaUser as unknown as React.FC<{ size?: number }>;
 
   return (
     <NavbarContainer>
-      <Logo to="/">LOGO</Logo>
+      <Logo to="/">
+        <img src="/images/logo.png" alt="logo" style={{ height: '60px' }} />
+      </Logo>
+
+      <TopLineWrapper>
+        <Line />
+      </TopLineWrapper>
 
       <NavCenter>
         {navItems.map(({ name, path }) => (
@@ -33,8 +41,12 @@ const Navbar = () => {
         ))}
       </NavCenter>
 
+      <BottomLineWrapper>
+        <Line />
+      </BottomLineWrapper>
+
       <NavRight to="/mypage">
-        <UserIcon size={20} />
+        <UserIcon size={28} />
       </NavRight>
     </NavbarContainer>
   );
