@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import { useNavigate } from 'react-router-dom';
 
 type FriendItemProps = {
   name: string;
@@ -7,6 +8,12 @@ type FriendItemProps = {
 };
 
 const FriendItem = ({ name, showAddButton = false }: FriendItemProps) => {
+  const navigate = useNavigate();
+
+  const handleGiftClick = () => {
+    navigate(`/friend-profile/${name}`);
+  };
+
   return (
     <ItemWrapper>
       <ProfileCircle />
@@ -15,7 +22,7 @@ const FriendItem = ({ name, showAddButton = false }: FriendItemProps) => {
       </ContentWrapper>
       <ButtonGroup>
         {showAddButton && (<AddFriendButton>친구 추가<AddFriendIcon /></AddFriendButton>)}
-        <GiftButton>선물 프로필<GiftIcon /></GiftButton>
+        <GiftButton onClick={handleGiftClick}>선물 프로필<GiftIcon /></GiftButton>
       </ButtonGroup>
     </ItemWrapper>
   );

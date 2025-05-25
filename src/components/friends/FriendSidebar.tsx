@@ -14,11 +14,18 @@ const FriendSidebar = () => {
 
   return (
     <SidebarContainer>
-      {menuItems.map(({ name, path }) => (
-        <MenuItem key={name} to={path} $active={location.pathname === path}>
-          {name}
-        </MenuItem>
-      ))}
+      {menuItems.map(({ name, path }) => {
+        const isActive =
+          name === '친구 목록'
+            ? location.pathname === '/friends' || location.pathname.startsWith('/friend-profile')
+            : location.pathname === path;
+
+        return (
+          <MenuItem key={name} to={path} $active={isActive}>
+            {name}
+          </MenuItem>
+        );
+      })}
     </SidebarContainer>
   );
 };
