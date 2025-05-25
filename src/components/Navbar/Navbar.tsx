@@ -33,12 +33,19 @@ const Navbar = () => {
       </TopLineWrapper>
 
       <NavCenter>
-        {navItems.map(({ name, path }) => (
-          <NavItem key={name} to={path} $active={location.pathname === path}>
-            {name}
-            {location.pathname === path && <Underline />}
-          </NavItem>
-        ))}
+        {navItems.map(({ name, path }) => {
+          const isActive =
+            name === '친구'
+              ? location.pathname === '/friends' || location.pathname.startsWith('/friend-profile')
+              : location.pathname === path;
+
+          return (
+            <NavItem key={name} to={path} $active={isActive}>
+              {name}
+              {isActive && <Underline />}
+            </NavItem>
+          );
+        })}
       </NavCenter>
 
       <BottomLineWrapper>

@@ -1,4 +1,4 @@
- import React from 'react';
+import React from 'react';
 import FriendItem from './FriendItem';
 import styled from 'styled-components';
 
