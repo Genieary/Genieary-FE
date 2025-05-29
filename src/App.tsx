@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar/Navbar';
+import FriendsPage from './pages/FriendsPage';
+import FriendProfilePage from './pages/FriendProfilePage';
 
 function App() {
   return (
@@ -9,7 +11,8 @@ function App() {
       <Routes>
         <Route path="/recommend" element={<div>추천 페이지</div>} />
         <Route path="/calendar" element={<div>캘린더 페이지</div>} />
-        <Route path="/friends" element={<div>친구 페이지</div>} />
+        <Route path="/friends" element={<FriendsPage />} />
+        <Route path="/friend-profile/:friendId" element={<FriendProfilePage />} />
         <Route path="/mypage" element={<div>마이페이지</div>} />
       </Routes>
     </BrowserRouter>
