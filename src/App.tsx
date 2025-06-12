@@ -4,6 +4,7 @@ import Navbar from './components/Navbar/Navbar';
 import FriendsPage from './pages/FriendsPage';
 import FriendProfilePage from './pages/FriendProfilePage';
 import RecommendPage from './pages/RecommandPage';
+import RecommandResultPage from './pages/RecommandResultPage';
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
       <Navbar />
       <Routes>
         <Route path="/recommend" element={<RecommendPage/>} />
+        <Route path="/recommend/result" element={<RecommandResultPage />} />
         <Route path="/calendar" element={<div>캘린더 페이지</div>} />
         <Route path="/friends" element={<FriendsPage />} />
         <Route path="/friend-profile/:friendId" element={<FriendProfilePage />} />
