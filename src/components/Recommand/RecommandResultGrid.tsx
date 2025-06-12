@@ -1,28 +1,21 @@
 import React, { useState } from "react";
 import styled from "styled-components";
-
-// 이미지/아이콘 SVG 파일 import
-import AirpodsImg from "../../assets/mock/airpods.png";
-import PlaneImg from "../../assets/mock/plane.png";
-import FreedomImg from "../../assets/mock/freedom.png";
 import HeartDefaultIcon from "../../assets/heart-default.svg";
 import HeartLikedIcon from "../../assets/heart-liked.svg";
 import BrokenHeartDefaultIcon from "../../assets/broken-heart-default.svg";
 import BrokenHeartDislikedIcon from "../../assets/broken-heart-disliked.svg";
 
-// 목업 데이터
-const resultData = [
-  { id: "item1", label: "에어팟 4세대", img: AirpodsImg },
-  { id: "item2", label: "비행기", img: PlaneImg },
-  { id: "item3", label: "자유", img: FreedomImg },
-];
+export interface ResultItem {
+  id: string;
+  label: string;
+  img: string;
+}
 
 type LikeStatus = 'liked' | 'disliked' | 'none';
 
-// --- 스타일 컴포넌트 ---
 const ResultGridContainer = styled.div`
   margin-left: -70px;
-  margin-bottom: 40px; 
+  margin-bottom:40px;
   width: 1024px;
   height: 360px;
   display: grid;
@@ -30,8 +23,7 @@ const ResultGridContainer = styled.div`
   gap: 38px;
   background: #fff;
   border-radius: 18px;
- box-shadow: 0 8px 24px -4px rgba(0,0,0,0.10),  /* 아래 그림자 */
-            0 -8px 24px -4px rgba(0,0,0,0.10); /* 위 그림자 */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   padding: 32px;
   align-items: end;
   justify-items: center;
@@ -57,7 +49,7 @@ const ResultCard = styled.div`
 `;
 
 const ResultImage = styled.img`
-  width: 150px;
+  width: 180px;
   height: 150px;
   object-fit: contain;
 `;
@@ -91,12 +83,15 @@ const IconButton = styled.button`
 `;
 
 const IconImage = styled.img`
-  width: 35px;
-  height: 35px;
+  width: 28px;
+  height: 28px;
 `;
-// --- 스타일 끝 ---
 
-const RecommandResultGrid: React.FC = () => {
+interface Props {
+  resultData: ResultItem[];
+}
+
+const RecommandResultGrid: React.FC<Props> = ({ resultData }) => {
   const [likeStatus, setLikeStatus] = useState<Record<string, LikeStatus>>({});
 
   const handleLike = (id: string) => {

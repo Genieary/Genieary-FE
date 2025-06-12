@@ -57,16 +57,18 @@ const QuestionText = styled.div`
   }
 `;
 
-const RecommandResultHeader: React.FC = () => (
+interface Props {
+  headerText: React.ReactNode;
+}
+
+const RecommandResultHeader: React.FC<Props> = ({ headerText }) => (
   <TopRow>
     <LampBox>
       <Jini src={JiniImg} alt="지니" />
       <Lamp src={LampImg} alt="램프" />
     </LampBox>
     <QuestionBox>
-      <QuestionText>
-        김은삼님을 위한 <span>선물</span> 추천 결과입니다!
-      </QuestionText>
+      <QuestionText>{headerText}</QuestionText>
     </QuestionBox>
   </TopRow>
 );
