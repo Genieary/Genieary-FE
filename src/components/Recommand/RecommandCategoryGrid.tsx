@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import styled, { css } from "styled-components";
+import { useNavigate } from "react-router-dom";
 import Activity from "../../assets/activity.svg";
 import Food from "../../assets/food.svg";
 import Gift from "../../assets/gift.svg";
@@ -8,11 +9,11 @@ import Funny from "../../assets/funny.svg";
 // 카테고리 타입
 export type Category = "선물" | "음식" | "활동" | "재미";
 
-const categories: { key: Category; label: string; icon: string }[] = [
-  { key: "선물", label: "선물", icon: Gift },
-  { key: "음식", label: "음식", icon: Food },
-  { key: "활동", label: "활동", icon: Activity },
-  { key: "재미", label: "재미", icon: Funny },
+const categories: { key: Category; label: string; icon: string; route: string }[] = [
+  { key: "선물", label: "선물", icon: Gift, route: "gift" },
+  { key: "음식", label: "음식", icon: Food, route: "food" },
+  { key: "활동", label: "활동", icon: Activity, route: "activity" },
+  { key: "재미", label: "재미", icon: Funny, route: "funny" },
 ];
 
 const CategoryGrid = styled.div`
@@ -143,6 +144,16 @@ const RecommendButtonArrow = styled.span`
 const RecommandCategoryGrid: React.FC = () => {
   const [selected, setSelected] = useState<Category | null>(null);
   const [hovered, setHovered] = useState<Category | null>(null);
+  const navigate = useNavigate();
+
+  // 선택된 카테고리의 route 값 찾기
+  const selectedRoute = categories.find((cat) => cat.key === selected)?.route;
+
+  const handleRecommendClick = () => {
+    if (selectedRoute) {
+      navigate(`/recommend/result/${selectedRoute}`);
+    }
+  };
 
   return (
     <>
@@ -171,7 +182,7 @@ const RecommandCategoryGrid: React.FC = () => {
         ))}
       </CategoryGrid>
       {selected && (
-        <RecommendButtonFixed>
+        <RecommendButtonFixed onClick={handleRecommendClick}>
           <RecommendButtonArrow>&gt;</RecommendButtonArrow>
           <span style={{fontWeight: 800, fontSize: "1.12rem"}}>추천받기</span>
         </RecommendButtonFixed>
