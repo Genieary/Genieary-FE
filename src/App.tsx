@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar/Navbar';
+import KakaoLoginButton from './components/Login/KakaoLoginButton';
+import OAuthKakaoCallback from "./pages/OAuthKakaoCallback";
 import FriendsPage from './pages/FriendsPage';
 import FriendProfilePage from './pages/FriendProfilePage';
 
@@ -14,9 +16,9 @@ function App() {
     <BrowserRouter>
       <Navbar />
       <Routes>
-        
+      <Route path="/login" element={<KakaoLoginButton />} />
+      <Route path="/oauth/kakao/callback" element={<OAuthKakaoCallback />} />
         <Route path="/calendar" element={<CalendarPage />} />
-
         <Route path="/recommend" element={<RecommendPage/>} />
         <Route path="/recommend/result/:category" element={<RecommandResultTemplate />} />
         
