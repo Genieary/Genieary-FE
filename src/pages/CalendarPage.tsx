@@ -5,9 +5,12 @@ import CalendarGrid from '../components/Calender/CalendarGrid';
 import Holidays from '../components/Sidebar/Holidays';
 import Summary from '../components/Sidebar/Summary';
 import UpcomingEvents from '../components/Sidebar/UpcomingEvents';
+import DiaryDetailPage from './DiaryDetailPage';
 
 const CalendarPage = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showDiaryDetail, setShowDiaryDetail] = useState(false);
 
   const handlePrevMonth = () => {
     const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
@@ -18,6 +21,28 @@ const CalendarPage = () => {
     const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
     setCurrentDate(newDate);
   };
+
+  // 날짜 클릭 핸들러
+  const handleDateClick = (date: Date) => {
+    setSelectedDate(date);
+    setShowDiaryDetail(true);
+  };
+
+  // 일기 페이지에서 뒤로가기
+  const handleBackToCalendar = () => {
+    setShowDiaryDetail(false);
+    setSelectedDate(null);
+  };
+
+  // 일기 작성 페이지를 보여줄지 캘린더를 보여줄지 결정
+  if (showDiaryDetail && selectedDate) {
+    return (
+      <DiaryDetailPage 
+        selectedDate={selectedDate} 
+        onBack={handleBackToCalendar}
+      />
+    );
+  }
 
   return (
     <Wrapper>
@@ -33,8 +58,11 @@ const CalendarPage = () => {
             onPrevMonth={handlePrevMonth}
             onNextMonth={handleNextMonth}
           />
-        
-          <CalendarGrid currentDate={currentDate} />
+          
+          <CalendarGrid 
+            currentDate={currentDate} 
+            onDateClick={handleDateClick}
+          />
         </CalendarGridWrapper>
       </Main>
     </Wrapper>
@@ -47,7 +75,6 @@ const Wrapper = styled.div`
   display: flex;
   gap: 24px;
   padding: 32px;
-  
 `;
 
 const Sidebar = styled.div`

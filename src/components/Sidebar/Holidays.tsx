@@ -2,9 +2,9 @@ import React from 'react';
 import styled from 'styled-components';
 
 const holidays = [
-  { date: 'May 5', name: '어린이 생일' },
-  { date: 'May 8', name: "아림이 집들이" },
-  { date: 'May 30', name: '종강 파티' },
+  { date: 'June 5', name: '어린이 생일' },
+  { date: 'June 8', name: "아림이 집들이" },
+  { date: 'June 30', name: '종강 파티' },
 ];
 
 const Holidays: React.FC = () => {
