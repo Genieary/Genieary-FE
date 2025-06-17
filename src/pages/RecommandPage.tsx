@@ -12,7 +12,7 @@ const Container = styled.div`
 `;
 
 const Main = styled.main`
-  max-width: ;
+  max-width: 100vw;
   margin: 0 auto;
   padding: 48px 0 0 0;
 `;
@@ -21,6 +21,8 @@ const ContentRow = styled.div`
   display: flex;
   gap: 36px;
   margin-top: 18px;
+  width: 90vw;
+
 `;
 
 const CategoryPanel = styled.div`
@@ -31,6 +33,10 @@ const CategoryPanel = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
+ width: 100%;
+  max-width: 600px;
+  min-width: 0;
+  margin-bottom:20px;
 `;
 
 const RecommandPage: React.FC = () => {

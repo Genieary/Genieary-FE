@@ -18,9 +18,10 @@ const categories: { key: Category; label: string; icon: string; route: string }[
 
 const CategoryGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 52px;
-  width: 560px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 40px;
+  width: 100%;
+  max-width: 580px;
 `;
 
 interface CategoryCardProps {
@@ -30,7 +31,7 @@ const CategoryCard = styled.button<CategoryCardProps>`
   background: #f8f9fa;
   border: none;
   border-radius: 13px;
-  padding: 32px 0;
+  padding: 36px 0;
   font-size: 1.2rem;
   display: flex;
   flex-direction: column;
