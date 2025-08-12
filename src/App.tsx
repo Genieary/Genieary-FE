@@ -5,11 +5,10 @@ import KakaoLoginButton from './components/Login/KakaoLoginButton';
 import OAuthKakaoCallback from "./pages/OAuthKakaoCallback";
 import FriendsPage from './pages/FriendsPage';
 import FriendProfilePage from './pages/FriendProfilePage';
-
 import CalendarPage from './pages/CalendarPage';
-
 import RecommendPage from './pages/RecommandPage';
 import RecommandResultTemplate from './pages/RecommandResultTemplate';
+import ChatPage from './pages/ChatPage';
 
 function App() {
   return (
@@ -25,6 +24,7 @@ function App() {
 
         <Route path="/friends" element={<FriendsPage />} />
         <Route path="/friend-profile/:friendId" element={<FriendProfilePage />} />
+        <Route path="/friends/chat/*" element={<ChatPage />} />
         <Route path="/mypage" element={<div>마이페이지</div>} />
       </Routes>
     </BrowserRouter>
