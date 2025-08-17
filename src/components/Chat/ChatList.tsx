@@ -1,58 +1,57 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import {ChatRoom } from '../../types/chat';
-
+import { ChatRoomResponse } from '../../types/chat';
 import { ReactComponent as PlusSvg } from '../../assets/plus.svg';
 import { ReactComponent as SearchSvg } from '../../assets/search.svg';
 
 interface ChatListProps {
-  chatRooms: ChatRoom[];
+  chatRooms: ChatRoomResponse[];
 }
 
-const ChatList: React.FC<ChatListProps> = ({ chatRooms }) => {
-  return (
-    <ChatListContainer>
-      <Header>
-        <Title>나의 채팅</Title>
-        <Actions>
-          <IconButton aria-label="검색">
-            <SearchIcon />
-          </IconButton>
-
-          <IconButton aria-label="새 채팅 시작">
-            <PlusIcon />
-          </IconButton>
-        </Actions>
-      </Header>
-      
-      {chatRooms.length === 0 ? (
-        <EmptyState>
-          <EmptyIcon>💬</EmptyIcon>
-          <EmptyText>이전 채팅이 없어요! +를 눌러 채팅을 시작해보세요!</EmptyText>
-        </EmptyState>
-      ) : (
-        <ChatRoomList>
-          {chatRooms.map((room) => (
-            <ChatRoomItem key={room.id} to={`/friends/chat/${room.id}`}>
-              <AvatarContainer>
-                <Avatar>
-                  {/* 실제 이미지가 없을 때 기본 배경색 */}
-                </Avatar>
-                {room.hasUnreadMessage && <UnreadDot />}
-              </AvatarContainer>
-              <ChatInfo>
-                <RoomName>{room.name}</RoomName>
-                <LastMessage>{room.lastMessage}</LastMessage>
-              </ChatInfo>
-              <Timestamp>{room.timestamp}</Timestamp>
-            </ChatRoomItem>
-          ))}
-        </ChatRoomList>
-      )}
-    </ChatListContainer>
-  );
-};
+const ChatList: React.FC<ChatListProps> = ({ chatRooms }) => (
+  <ChatListContainer>
+    <Header>
+      <Title>나의 채팅</Title>
+      <Actions>
+        <IconButton aria-label="검색">
+          <SearchIcon />
+        </IconButton>
+        <IconButton aria-label="새 채팅 시작">
+          <PlusIcon />
+        </IconButton>
+      </Actions>
+    </Header>
+    {chatRooms.length === 0 ? (
+      <EmptyState>
+        <EmptyIcon>💬</EmptyIcon>
+        <EmptyText>이전 채팅이 없어요! +를 눌러 채팅을 시작해보세요!</EmptyText>
+      </EmptyState>
+    ) : (
+      <ChatRoomList>
+        {chatRooms.map(room => (
+          <ChatRoomItem key={room.id} to={`/friends/chat/${room.id}`}>
+            <AvatarContainer>
+              {room.otherUser.imageFileName ? (
+                <AvatarImg src={room.otherUser.imageFileName} alt="프로필" />
+              ) : (
+                <Avatar />
+              )}
+              {room.unreadCount > 0 && <UnreadDot />}
+            </AvatarContainer>
+            <ChatInfo>
+              <RoomName>{room.otherUser.nickname}</RoomName>
+              <LastMessage>{room.lastMessage}</LastMessage>
+            </ChatInfo>
+            <Timestamp>
+              {room.lastMessageTime ? new Date(room.lastMessageTime).toLocaleString() : ''}
+            </Timestamp>
+          </ChatRoomItem>
+        ))}
+      </ChatRoomList>
+    )}
+  </ChatListContainer>
+);
 
 export default ChatList;
 
@@ -208,4 +207,11 @@ const Timestamp = styled.div`
   font-size: 12px;
   color: #999;
   flex-shrink: 0;
+`;
+
+const AvatarImg = styled.img`
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
 `;

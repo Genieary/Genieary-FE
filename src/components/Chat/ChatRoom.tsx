@@ -1,102 +1,92 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { Message, ChatRoom as ChatRoomType }  from '../../types/chat';
-import { ReactComponent as MenuSvg }   from '../../assets/list.svg';
+import { ChatMessageResponse, ChatRoomResponse } from '../../types/chat';
+import { ReactComponent as MenuSvg } from '../../assets/list.svg';
 import { ReactComponent as CameraSvg } from '../../assets/camera.svg';
-import { ReactComponent as SendSvg }   from '../../assets/arrow-up.svg';
+import { ReactComponent as SendSvg } from '../../assets/arrow-up.svg';
 
 interface ChatRoomProps {
-  messages: Message[];
-  onSendMessage: (content: string) => void;
-  chatRooms: ChatRoomType[];
-  getChatRoomById: (id: string) => ChatRoomType | undefined;
+  messages: ChatMessageResponse[];
+  onSendMessage: (roomUuid: string, content: string) => void;
+  chatRooms: ChatRoomResponse[];
+  getChatRoomById: (id: string) => ChatRoomResponse | undefined;
+  fetchMessages: (roomUuid: string) => void;
 }
 
-const ChatRoom: React.FC<ChatRoomProps> = ({ 
-  messages, 
-  onSendMessage, 
-  chatRooms, 
-  getChatRoomById 
+const ChatRoom: React.FC<ChatRoomProps> = ({
+  messages,
+  onSendMessage,
+  chatRooms,
+  getChatRoomById,
+  fetchMessages,
 }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [inputValue, setInputValue] = useState('');
 
-  // 현재 채팅방 정보 가져오기
-  const currentChatRoom = id ? getChatRoomById(id) : null;
+  // 채팅방 UUID, 정보, 메시지 불러오기
+  const chatRoom = id ? getChatRoomById(id) : undefined;
+  useEffect(() => {
+    if (chatRoom?.roomUuid) {
+      fetchMessages(chatRoom.roomUuid);
+    }
+  }, [chatRoom?.roomUuid]);
 
-  if (!currentChatRoom) {
-    return (
-      <ChatRoomContainer>
-        <div>채팅방을 찾을 수 없습니다.</div>
-      </ChatRoomContainer>
-    );
+  if (!chatRoom) {
+    return <ChatRoomContainer>채팅방을 찾을 수 없습니다.</ChatRoomContainer>;
   }
 
+  const [inputValue, setInputValue] = React.useState('');
   const handleSend = () => {
     if (inputValue.trim()) {
-      onSendMessage(inputValue.trim());
+      onSendMessage(chatRoom.roomUuid, inputValue);
       setInputValue('');
     }
   };
-
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
-
   const handleMenuClick = () => navigate(`/friends/chat/${id}/photos`);
-
-  const handleBack = () => {
-    navigate('/friends/chat');
-  };
+  const handleBack = () => navigate('/friends/chat');
 
   return (
     <ChatRoomContainer>
       <ChatHeader>
         <BackButton onClick={handleBack}>＜ 채팅 목록</BackButton>
         <UserInfo>
-          <ChatTitle>{currentChatRoom.name}</ChatTitle>
+          <ChatTitle>{chatRoom.otherUser.nickname}</ChatTitle>
           <UserStatus>아이디</UserStatus>
         </UserInfo>
         <IconButton aria-label="메뉴" onClick={handleMenuClick}>
-         <MenuIcon  />
+          <MenuIcon />
         </IconButton>
       </ChatHeader>
-      
       <MessagesContainer>
-        <MessageGroup>
-          <UserAvatar />
-          <MessageContent>
-            <UserName>{currentChatRoom.name}</UserName>
-            <UserQuestion>오늘 같이 커피 사갈까?</UserQuestion>
-          </MessageContent>
-        </MessageGroup>
-        
-        <ImageMessage>
-          <ImagePlaceholder>사진</ImagePlaceholder>
-        </ImageMessage>
-        
-        <SuggestedReply>
-          오늘 같이 마가롱 사갈까?
-        </SuggestedReply>
+        {messages.map((msg) => (
+          <MessageGroup key={msg.id} isMe={msg.senderId === chatRoom.otherUser.id}>
+            <UserAvatar />
+            <MessageContent>
+              <UserName>{msg.senderNickname}</UserName>
+              <UserQuestion>{msg.message}</UserQuestion>
+            </MessageContent>
+          </MessageGroup>
+        ))}
       </MessagesContainer>
-      
       <InputContainer>
         <MessageInput
           value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
+          onChange={e => setInputValue(e.target.value)}
           onKeyPress={handleKeyPress}
           placeholder="메시지 입력"
         />
         <IconButton aria-label="카메라">
-             <CameraIcon />      
+          <CameraIcon />
         </IconButton>
         <SendButton aria-label="전송" onClick={handleSend}>
-            <SendIcon />
+          <SendIcon />
         </SendButton>
       </InputContainer>
     </ChatRoomContainer>
@@ -105,7 +95,6 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
 
 export default ChatRoom;
 
-// 스타일 컴포넌트들은 이전과 동일...
 const ChatRoomContainer = styled.div`
   flex: 1;
   background: white;

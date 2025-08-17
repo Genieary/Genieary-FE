@@ -1,10 +1,10 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import styled from 'styled-components';
-import { ChatRoom } from '../../types/chat';
+import { ChatRoomResponse } from '../../types/chat'; 
 
 interface PhotoGalleryProps {
-  getChatRoomById: (id: string) => ChatRoom | undefined;
+  getChatRoomById: (id: string) => ChatRoomResponse | undefined; 
 }
 
 const PhotoGallery: React.FC<PhotoGalleryProps> = ({ getChatRoomById }) => {
@@ -29,7 +29,6 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({ getChatRoomById }) => {
 
   return (
     <Container>
-      {/* 헤더: 뒤로가기 + 사용자 정보 */}
       <Header>
         <BackButton onClick={handleBackToChat}>
           ＜ 채팅
@@ -38,16 +37,14 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({ getChatRoomById }) => {
         <UserInfoCenter>
           <Avatar />
           <UserInfo>
-            <UserName>{room.name}</UserName>
-            <NickName>아이디</NickName>
+            <UserName>{room.otherUser.nickname}</UserName>
+            <NickName>@{room.otherUser.nickname}-nick</NickName>
           </UserInfo>
         </UserInfoCenter>
         
-        {/* 헤더 균형을 위한 빈 공간 */}
         <Spacer />
       </Header>
 
-      {/* 사진 그리드 */}
       <Grid>
         {photos.map(src => (
           <Photo key={src}>
@@ -56,7 +53,6 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({ getChatRoomById }) => {
         ))}
       </Grid>
 
-      {/* 우측 하단: 채팅방 나가기 */}
       <ExitButton onClick={handleExitChat} aria-label="채팅방 나가기">
         채팅방 나가기
       </ExitButton>
