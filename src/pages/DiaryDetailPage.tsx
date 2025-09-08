@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import styled from 'styled-components';
 import Holidays from '../components/Sidebar/Holidays';
 
@@ -7,14 +7,46 @@ interface DiaryDetailPageProps {
   onBack: () => void;
 }
 
+type HolidayItem = {
+  date: string;   // 'YYYY-MM-DD'
+  title: string;  // Holidays 컴포넌트가 name/title 둘 다 받도록 했다면 name으로 바꿔도 OK
+  color?: string; // (옵션) 필요시 확장
+};
+
 const DiaryDetailPage: React.FC<DiaryDetailPageProps> = ({ selectedDate, onBack }) => {
   const [diaryContent, setDiaryContent] = useState('');
   const [weatherData] = useState({
-    condition: '오늘도니 화가 날 것 같아요. 그런데 업데이트를 줄인 것도 보아 약간 미소를 지어지는 것 같아요.',
+    condition:
+      '오늘도 화가 날 것 같아요. 그런데 업데이트를 줄인 것도 보아 약간 미소를 짓는 것 같아요.',
     sunny: 99,
     cloudy: 0.6,
-    rainy: 0.4
+    rainy: 0.4,
   });
+
+  // 샘플 이벤트(원하는 경우 전역/상위로 올려 공유)
+  const allHolidays: HolidayItem[] = useMemo(() => {
+    const y = selectedDate.getFullYear();
+    return [
+      { date: `${y}-09-05`, title: '어린이 생일' },
+      { date: `${y}-09-08`, title: '아림이 집들이' },
+      { date: `${y}-09-30`, title: '야옹 파티' },
+
+      // 다른 달 예시
+      { date: `${y}-08-31`, title: 'Project deadline' },
+      { date: `${y}-10-02`, title: 'Team offsite' },
+      { date: `${y}-10-05`, title: 'Friend birthday 🎂' },
+    ];
+  }, [selectedDate]);
+
+  // YYYY-MM → 같은 달만 필터
+  const monthKey = `${selectedDate.getFullYear()}-${String(
+    selectedDate.getMonth() + 1
+  ).padStart(2, '0')}`;
+
+  const monthHolidays = useMemo(
+    () => allHolidays.filter((h) => h.date.startsWith(monthKey)),
+    [allHolidays, monthKey]
+  );
 
   const formatDate = (date: Date) => {
     return `${date.getFullYear()} ${date.toLocaleDateString('ko-KR', { month: 'short' })}`;
@@ -26,25 +58,24 @@ const DiaryDetailPage: React.FC<DiaryDetailPageProps> = ({ selectedDate, onBack 
 
   return (
     <Wrapper>
-       
       <Sidebar>
-      <DateHeader>
+        <DateHeader>
           <DateTitle>{formatDate(selectedDate)}</DateTitle>
         </DateHeader>
-        <Holidays />
+        
+        <Holidays items={allHolidays} currentDate={selectedDate} />
+
       </Sidebar>
 
       <Main>
         <Header>
-          <BackButton onClick={onBack}>← 추천 기능</BackButton>
+          <BackButton onClick={onBack}>← 뒤로가기</BackButton>
           <HeaderCenter>캘린더</HeaderCenter>
-          
         </Header>
 
-
         <DateNumber>{formatDay(selectedDate)}</DateNumber>
+
         <ActionButtons>
-       
           <SaveButton>📥 공유하기</SaveButton>
           <EditButton>📷 사진찍기</EditButton>
         </ActionButtons>
@@ -57,7 +88,8 @@ const DiaryDetailPage: React.FC<DiaryDetailPageProps> = ({ selectedDate, onBack 
               <WeatherLabel>사진 분석 결과:</WeatherLabel>
               <WeatherDescription>{weatherData.condition}</WeatherDescription>
               <WeatherStats>
-                맑게: 땨는 {weatherData.sunny}%, 흐름 {weatherData.cloudy}%, 기쁨 {weatherData.rainy}%
+                맑게 {weatherData.sunny}%, 흐림 {weatherData.cloudy}%,
+                기쁨 {weatherData.rainy}%
               </WeatherStats>
             </WeatherContent>
           </WeatherCard>
@@ -82,7 +114,7 @@ const DiaryDetailPage: React.FC<DiaryDetailPageProps> = ({ selectedDate, onBack 
             일정 및 이벤트 추가
             <AddEventButton>+ 일정 추가</AddEventButton>
           </EventManagementTitle>
-          
+
           <EventList>
             <EventListItem>
               <EventListName>팀 미팅</EventListName>
@@ -92,7 +124,7 @@ const DiaryDetailPage: React.FC<DiaryDetailPageProps> = ({ selectedDate, onBack 
                 <ActionIcon>🗑️</ActionIcon>
               </EventActions>
             </EventListItem>
-            
+
             <EventListItem>
               <EventListName>고양이 산책</EventListName>
               <EventActions>
@@ -101,7 +133,7 @@ const DiaryDetailPage: React.FC<DiaryDetailPageProps> = ({ selectedDate, onBack 
                 <ActionIcon>🗑️</ActionIcon>
               </EventActions>
             </EventListItem>
-            
+
             <EventListItem>
               <EventListName>고발과 산책</EventListName>
               <EventActions>
@@ -111,7 +143,7 @@ const DiaryDetailPage: React.FC<DiaryDetailPageProps> = ({ selectedDate, onBack 
               </EventActions>
             </EventListItem>
           </EventList>
-          
+
           <NewEventInput>
             <EventInput placeholder="새로운 일정을 입력하세요..." />
           </NewEventInput>
@@ -133,34 +165,6 @@ const Wrapper = styled.div`
 
 const Sidebar = styled.div`
   width: 240px;
-`;
-
-const EventSection = styled.div`
-  background-color: #fff3cd;
-  padding: 16px;
-  border-radius: 8px;
-`;
-
-const EventTitle = styled.h3`
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 12px;
-  color: #333;
-`;
-
-const EventItem = styled.div`
-  margin-bottom: 8px;
-`;
-
-const EventDate = styled.span`
-  color: #ff9500;
-  font-size: 12px;
-  font-weight: 500;
-`;
-
-const EventName = styled.div`
-  color: #333;
-  font-size: 14px;
 `;
 
 const Main = styled.div`
@@ -190,11 +194,6 @@ const HeaderCenter = styled.div`
   font-size: 18px;
   font-weight: 600;
   color: #007bff;
-`;
-
-const HeaderRight = styled.div`
-  color: #007bff;
-  font-size: 14px;
 `;
 
 const DateHeader = styled.div`
@@ -318,7 +317,7 @@ const DiaryTextarea = styled.textarea`
   line-height: 1.5;
   resize: vertical;
   margin-bottom: 12px;
-  
+
   &:focus {
     outline: none;
     border-color: #007bff;
@@ -412,7 +411,7 @@ const EventInput = styled.input`
   border: 1px solid #dee2e6;
   border-radius: 6px;
   font-size: 14px;
-  
+
   &:focus {
     outline: none;
     border-color: #007bff;

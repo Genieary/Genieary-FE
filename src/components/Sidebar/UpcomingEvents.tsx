@@ -1,21 +1,24 @@
 import React from 'react';
 import styled from 'styled-components';
 
-const upcomingEvents = [
-  { date: 'May 31', title: 'Project deadline' },
-  { date: 'Jun 2', title: 'Team offsite' },
-  { date: 'Jun 5', title: 'Friend birthday 🎂' },
-];
+interface EventItem {
+  date: string;  // YYYY-MM-DD
+  title: string;
+}
 
-const UpcomingEvents: React.FC = () => {
+interface UpcomingEventsProps {
+  items: EventItem[];
+}
+
+const UpcomingEvents: React.FC<UpcomingEventsProps> = ({ items }) => {
   return (
     <Box>
       <Title>Upcoming Events</Title>
       <List>
-        {upcomingEvents.map((event, index) => (
-          <Item key={index}>
-            <DateText>{event.date}</DateText> {event.title}
-          </Item>
+        {items.map((ev, i) => (
+          <ItemLi key={i}>
+            <DateText>{ev.date.slice(5)}</DateText> {ev.title}
+          </ItemLi>
         ))}
       </List>
     </Box>
@@ -30,22 +33,18 @@ const Box = styled.div`
   border-radius: 12px;
   font-size: 14px;
 `;
-
 const Title = styled.div`
   font-weight: bold;
   margin-bottom: 8px;
 `;
-
 const List = styled.ul`
   list-style: none;
   padding: 0;
   margin: 0;
 `;
-
-const Item = styled.li`
+const ItemLi = styled.li`
   margin-bottom: 4px;
 `;
-
 const DateText = styled.span`
   color: #4285f4;
   font-weight: 600;

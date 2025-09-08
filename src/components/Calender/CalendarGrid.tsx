@@ -1,84 +1,102 @@
+// CalendarGrid.tsx
 import React from 'react';
 import styled from 'styled-components';
+import CalendarDay, { DayEvent } from './CalendarDay';
 
 interface CalendarGridProps {
   currentDate: Date;
   onDateClick?: (date: Date) => void;
+  eventsByDate?: Record<string, DayEvent[]>; // ← 추가
+  holidaysSet?: Set<string>;                 // 선택: 휴일 강조 (키: YYYY-MM-DD)
 }
 
-const CalendarGrid: React.FC<CalendarGridProps> = ({ currentDate, onDateClick }) => {
+const keyOf = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+const CalendarGrid: React.FC<CalendarGridProps> = ({ currentDate, onDateClick, eventsByDate = {}, holidaysSet }) => {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-  
-  // 이번 달의 첫 번째 날과 마지막 날
+
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
-  
-  // 이번 달의 첫 번째 날이 무슨 요일인지 (0: 일요일, 1: 월요일, ...)
+
   const firstDayOfWeek = firstDay.getDay();
-  
-  // 이번 달의 총 일수
   const daysInMonth = lastDay.getDate();
-  
-  // 이전 달의 마지막 날
   const prevMonthLastDay = new Date(year, month, 0).getDate();
-  
-  // 다음 달의 첫 번째 날들
-  const nextMonthDays = 42 - (firstDayOfWeek + daysInMonth); // 6주 * 7일 = 42일
-  
-  const days = [];
-  
-  // 이전 달의 날짜들 (회색으로 표시)
+  const nextMonthDays = 42 - (firstDayOfWeek + daysInMonth);
+
+  const days: React.ReactNode[] = [];
+
+  // 이전 달
   for (let i = firstDayOfWeek - 1; i >= 0; i--) {
     const date = new Date(year, month - 1, prevMonthLastDay - i);
-    days.push(
-      <DateCell 
-        key={`prev-${prevMonthLastDay - i}`} 
-        isOtherMonth
-        onClick={() => onDateClick && onDateClick(date)}
-      >
-        {prevMonthLastDay - i}
-      </DateCell>
-    );
-  }
-  
-  // 이번 달의 날짜들
-  for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(year, month, day);
-    const isToday = 
+    const isToday =
       date.getDate() === new Date().getDate() &&
       date.getMonth() === new Date().getMonth() &&
       date.getFullYear() === new Date().getFullYear();
-    
+
+    const key = keyOf(date);
     days.push(
-      <DateCell 
-        key={day} 
+      <CalendarDay
+        key={`prev-${prevMonthLastDay - i}`}
+        day={prevMonthLastDay - i}
         isToday={isToday}
-        onClick={() => onDateClick && onDateClick(date)}
-      >
-        {day}
-      </DateCell>
+        isCurrentMonth={false}
+        isHoliday={holidaysSet?.has(key)}
+        events={eventsByDate[key] ?? []}
+        onClick={() => onDateClick?.(date)}
+      />
     );
   }
-  
-  // 다음 달의 날짜들 (회색으로 표시)
+
+  // 이번 달
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month, day);
+    const isToday =
+      date.getDate() === new Date().getDate() &&
+      date.getMonth() === new Date().getMonth() &&
+      date.getFullYear() === new Date().getFullYear();
+
+    const key = keyOf(date);
+    days.push(
+      <CalendarDay
+        key={day}
+        day={day}
+        isToday={isToday}
+        isCurrentMonth={true}
+        isHoliday={holidaysSet?.has(key)}
+        events={eventsByDate[key] ?? []}
+        onClick={() => onDateClick?.(date)}
+      />
+    );
+  }
+
+  // 다음 달
   for (let day = 1; day <= nextMonthDays; day++) {
     const date = new Date(year, month + 1, day);
+    const isToday =
+      date.getDate() === new Date().getDate() &&
+      date.getMonth() === new Date().getMonth() &&
+      date.getFullYear() === new Date().getFullYear();
+
+    const key = keyOf(date);
     days.push(
-      <DateCell 
-        key={`next-${day}`} 
-        isOtherMonth
-        onClick={() => onDateClick && onDateClick(date)}
-      >
-        {day}
-      </DateCell>
+      <CalendarDay
+        key={`next-${day}`}
+        day={day}
+        isToday={isToday}
+        isCurrentMonth={false}
+        isHoliday={holidaysSet?.has(key)}
+        events={eventsByDate[key] ?? []}
+        onClick={() => onDateClick?.(date)}
+      />
     );
   }
 
   return (
     <Grid>
       <WeekHeader>
-        <WeekDay>Sun</WeekDay>
+        <WeekDay style={{ color: '#d9534f' }}>Sun</WeekDay>
         <WeekDay>Mon</WeekDay>
         <WeekDay>Tue</WeekDay>
         <WeekDay>Wed</WeekDay>
@@ -86,9 +104,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentDate, onDateClick })
         <WeekDay>Fri</WeekDay>
         <WeekDay>Sat</WeekDay>
       </WeekHeader>
-      <DatesGrid>
-        {days}
-      </DatesGrid>
+      <DatesGrid>{days}</DatesGrid>
     </Grid>
   );
 };
@@ -119,30 +135,4 @@ const DatesGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 2px;
-`;
-
-const DateCell = styled.div<{ isToday?: boolean; isOtherMonth?: boolean }>`
-  padding: 8px;
-  text-align: left;
-  cursor: pointer;
-  font-size: 14px;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-  min-height: 80px;
-  background-color: #F8F9FA;
-  
-  
-  ${props => props.isToday && `
-    background-color: #E0E6FF;
-    font-weight: 600;
-  `}
-  
-  ${props => props.isOtherMonth && `
-    color: #ccc;
-    // background-color: #f1f3f4;
-  `}
-  
-  &:hover {
-    background-color: ${props => props.isToday ? '#d4daff' : '#e9ecef'};
-  }
 `;
