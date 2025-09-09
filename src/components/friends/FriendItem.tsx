@@ -5,14 +5,20 @@ import { useNavigate } from 'react-router-dom';
 type FriendItemProps = {
   name: string;
   showAddButton?: boolean;
+  showDeleteButton?: boolean;
+  onDelete?: (name: string) => void;
 };
 
-const FriendItem = ({ name, showAddButton = false }: FriendItemProps) => {
+const FriendItem = ({
+  name,
+  showAddButton = false,
+  showDeleteButton = false,
+  onDelete,
+}: FriendItemProps) => {
   const navigate = useNavigate();
 
-  const handleGiftClick = () => {
-    navigate(`/friend-profile/${name}`);
-  };
+  const handleGiftClick = () => navigate(`/friend-profile/${name}`);
+  const handleDelete = () => onDelete?.(name);
 
   return (
     <ItemWrapper>
@@ -20,9 +26,23 @@ const FriendItem = ({ name, showAddButton = false }: FriendItemProps) => {
       <ContentWrapper>
         <Name>{name}</Name>
       </ContentWrapper>
+
       <ButtonGroup>
-        {showAddButton && (<AddFriendButton>친구 추가<AddFriendIcon /></AddFriendButton>)}
-        <GiftButton onClick={handleGiftClick}>선물 프로필<GiftIcon /></GiftButton>
+        {showAddButton && (
+          <AddFriendButton>
+            친구 추가 <AddFriendIcon />
+          </AddFriendButton>
+        )}
+
+        {showDeleteButton && (
+          <DeleteButton onClick={handleDelete}>
+            친구 삭제 <DeleteIcon />
+          </DeleteButton>
+        )}
+
+        <GiftButton onClick={handleGiftClick}>
+          선물 프로필 <GiftIcon />
+        </GiftButton>
       </ButtonGroup>
     </ItemWrapper>
   );
@@ -41,7 +61,7 @@ const ItemWrapper = styled.div`
 const ProfileCircle = styled.div`
   width: 44px;
   height: 44px;
-  background-color:#fff3bf;
+  background-color: #fff3bf;
   border-radius: 50%;
   flex-shrink: 0;
 `;
@@ -54,6 +74,13 @@ const ContentWrapper = styled.div`
 const Name = styled.span`
   font-size: 18px;
   font-weight: 600;
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
 `;
 
 const GiftButton = styled.button`
@@ -84,11 +111,18 @@ const AddFriendButton = styled.button`
   cursor: pointer;
 `;
 
-const ButtonGroup = styled.div`
+const DeleteButton = styled.button`
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-left: auto;
+  gap: 6px;
+  background: #f4f4f4;
+  border: 1.5px solid #9aa0a6;
+  color: #5f6368;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
 `;
 
 const GiftIcon = () => (
@@ -100,5 +134,19 @@ const GiftIcon = () => (
 const AddFriendIcon = () => (
   <svg width="16" height="16" viewBox="0 0 20 18" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M13.333 16.5V14.8333C13.333 13.9493 12.9818 13.1014 12.3567 12.4763C11.7316 11.8512 10.8837 11.5 9.99967 11.5H4.16634C3.28229 11.5 2.43444 11.8512 1.80932 12.4763C1.1842 13.1014 0.833008 13.9493 0.833008 14.8333V16.5M16.6663 5.66667V10.6667M19.1663 8.16667H14.1663M10.4163 4.83333C10.4163 6.67428 8.92396 8.16667 7.08301 8.16667C5.24206 8.16667 3.74967 6.67428 3.74967 4.83333C3.74967 2.99238 5.24206 1.5 7.08301 1.5C8.92396 1.5 10.4163 2.99238 10.4163 4.83333Z" stroke="#2B8A3E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const DeleteIcon = () => (
+  <svg
+    width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g clipPath="url(#clip0_676_495)">
+      <path d="M16 21V19C16 17.9391 15.5786 16.9217 14.8284 16.1716C14.0783 15.4214 13.0609 15 12 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21M18 8L23 13M23 8L18 13M12.5 7C12.5 9.20914 10.7091 11 8.5 11C6.29086 11 4.5 9.20914 4.5 7C4.5 4.79086 6.29086 3 8.5 3C10.7091 3 12.5 4.79086 12.5 7Z" stroke="#757575" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </g>
+    <defs>
+      <clipPath id="clip0_676_495">
+        <rect width="24" height="24" fill="white" />
+      </clipPath>
+    </defs>
   </svg>
 );
