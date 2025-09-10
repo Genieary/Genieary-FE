@@ -63,7 +63,7 @@ const LoginPage: React.FC = () => {
         <Divider/>
 
         <SocialLoginContainer>
-          <KakaoLoginButton />
+          <KakaoLoginButton disabled={loading} />
         </SocialLoginContainer>
         
         <LinkContainer>
@@ -112,7 +112,7 @@ const FormContainer = styled.form`
 const InputField = styled.div`
   input {
     width: 100%;
-    box-sizing: border-box;   /* ★ 추가 */
+    box-sizing: border-box; 
     padding: 12px 16px;
     border: 1px solid #ddd;
     border-radius: 10px;

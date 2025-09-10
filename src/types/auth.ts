@@ -4,6 +4,10 @@ export interface LoginRequest {
     password: string;
   }
   
+  export interface KakaoLoginRequest {
+    code: string;
+  }
+  
   export interface LoginResponse {
     userId: number;
     accessToken: string;

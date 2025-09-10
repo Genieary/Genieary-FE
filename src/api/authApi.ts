@@ -1,6 +1,6 @@
 // src/api/authApi.ts
 import { ApiClient } from './apiClient';
-import { LoginRequest, LoginResponse } from '../types/auth';
+import { LoginRequest, LoginResponse, KakaoLoginRequest } from '../types/auth';
 
 export class AuthApi {
   private apiClient: ApiClient;
@@ -9,6 +9,7 @@ export class AuthApi {
     this.apiClient = ApiClient.getInstance();
   }
 
+  // 일반 로그인
   async normalLogin(credentials: LoginRequest) {
     return await this.apiClient.request<LoginResponse>('api/auth/login', {
       method: 'POST',
@@ -16,6 +17,11 @@ export class AuthApi {
     });
   }
 
-  // 카카오 로그인이 이미 구현되어 있다면 여기에 추가 가능
+  // 카카오 로그인
+  async kakaoLogin(kakaoData: KakaoLoginRequest) {
+    return await this.apiClient.request<LoginResponse>(`api/auth/kakao?code=${kakaoData.code}`, {
+      method: 'GET',
+    });
+  }
   
 }
