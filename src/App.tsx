@@ -16,7 +16,7 @@ function App() {
       <Navbar />
       <Routes>
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/oauth/kakao/callback" element={<OAuthKakaoCallback />} />
+      <Route path="/api/auth/kakao/callback" element={<OAuthKakaoCallback />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/recommend" element={<RecommendPage/>} />
         <Route path="/recommend/result/:category" element={<RecommandResultTemplate />} />
