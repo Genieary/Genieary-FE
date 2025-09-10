@@ -1,23 +1,63 @@
 // src/pages/LoginPage.tsx
-import React from "react";
+import React, { useState }  from "react";
 import styled from "styled-components";
+import { useNavigate } from "react-router-dom";
 import KakaoLoginButton from "../components/Login/KakaoLoginButton";
+import { useAuth } from "../hooks/useAuth";
 
 const LoginPage: React.FC = () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const { login, loading, error } = useAuth();
+  const navigate = useNavigate();
+
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !password) {
+      alert("이메일과 비밀번호를 입력해주세요.");
+      return;
+    }
+
+    const result = await login({ email, password });
+    
+    if (result) {
+      // 로그인 성공 시 메인 페이지로 이동
+      navigate("/");
+    }
+  };
+
   return (
     <LoginContainer>
         <Title>로그인</Title>
       <LoginBox>
-        <FormContainer>
+        <FormContainer onSubmit={handleSubmit}>
           <InputField>
-            <input type="email" placeholder="이메일을 입력하세요" />
+            <input 
+                type="email" 
+                placeholder="이메일을 입력하세요"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+              />
           </InputField>
           
           <InputField>
-            <input type="password" placeholder="비밀번호를 입력하세요" />
+            <input 
+                type="password" 
+                placeholder="비밀번호를 입력하세요"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+              />
           </InputField>
+
+          {error && <ErrorMessage>{error}</ErrorMessage>}
           
-          <LoginButton>로그인</LoginButton>
+          <LoginButton type="submit" disabled={loading}>
+            {loading ? "로그인 중..." : "로그인"}
+          </LoginButton>
         </FormContainer>
         
         <Divider/>
@@ -62,7 +102,7 @@ const LoginBox = styled.div`
 `;
 
 
-const FormContainer = styled.div`
+const FormContainer = styled.form`
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -155,6 +195,12 @@ const SignupLink = styled.a`
   &:hover {
     text-decoration: underline;
   }
+`;
+
+const ErrorMessage = styled.div`
+  color: #ff4757;
+  font-size: 14px;
+  margin-top: -8px;
 `;
 
 export default LoginPage;
