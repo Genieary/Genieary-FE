@@ -6,14 +6,24 @@ type FriendItemProps = {
   name: string;
   showAddButton?: boolean;
   showDeleteButton?: boolean;
+  showCancelButton?: boolean;
+  showRejectButton?: boolean;
   onDelete?: (name: string) => void;
+  onAdd?: (name: string) => void;
+  onCancel?: (name: string) => void;
+  onReject?: (name: string) => void;
 };
 
 const FriendItem = ({
   name,
   showAddButton = false,
   showDeleteButton = false,
+  showCancelButton = false,
+  showRejectButton = false,
   onDelete,
+  onAdd,
+  onCancel,
+  onReject,
 }: FriendItemProps) => {
   const navigate = useNavigate();
 
@@ -29,9 +39,21 @@ const FriendItem = ({
 
       <ButtonGroup>
         {showAddButton && (
-          <AddFriendButton>
+          <AddFriendButton onClick={() => onAdd?.(name)}>
             친구 추가 <AddFriendIcon />
           </AddFriendButton>
+        )}
+
+        {showCancelButton && (
+          <DeleteButton onClick={() => onCancel?.(name)}>
+            신청 취소 <DeleteIcon />
+          </DeleteButton>
+        )}
+
+        {showRejectButton && (
+          <DeleteButton onClick={() => onReject?.(name)}>
+            거절 <DeleteIcon />
+          </DeleteButton>
         )}
 
         {showDeleteButton && (
