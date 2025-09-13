@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 
 const menuItems = [
-  { name: '친구 찾기', path: '/friends/find' },
+  { name: '친구 찾기', path: '/friends/search' },
   { name: '친구 목록', path: '/friends' },
   { name: '채팅', path: '/friends/chat' },
   { name: '친구 신청', path: '/friends/requests' },
