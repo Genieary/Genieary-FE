@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage';
 import OAuthKakaoCallback from "./pages/OAuthKakaoCallback";
 import FriendsPage from './pages/FriendsPage';
 import FriendProfilePage from './pages/FriendProfilePage';
+import FriendRequestPage from './pages/FriendRequestPage';
 import CalendarPage from './pages/CalendarPage';
 import RecommendPage from './pages/RecommandPage';
 import RecommandResultTemplate from './pages/RecommandResultTemplate';
@@ -23,6 +24,7 @@ function App() {
         
 
         <Route path="/friends" element={<FriendsPage />} />
+        <Route path="/friends/requests" element={<FriendRequestPage />} />
         <Route path="/friend-profile/:friendId" element={<FriendProfilePage />} />
         <Route path="/friends/chat/*" element={<ChatPage />} />
         <Route path="/mypage" element={<div>마이페이지</div>} />
