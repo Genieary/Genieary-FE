@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { AuthApi } from '../api/authApi';
 import { LoginRequest, LoginResponse, KakaoLoginRequest  } from '../types/auth';
+import { AuthService } from '../services/authService';
 
 export const useAuth = () => {
   const [loading, setLoading] = useState(false);
@@ -9,10 +10,9 @@ export const useAuth = () => {
   const authApi = new AuthApi();
 
   const saveTokens = (data: LoginResponse) => {
-    localStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('refreshToken', data.refreshToken);
-    localStorage.setItem('userId', data.userId.toString());
+    AuthService.saveTokens(data.userId, data.accessToken, data.refreshToken);
   };
+
 
   //일반 로그인
   const login = async (credentials: LoginRequest): Promise<LoginResponse | null> => {
@@ -69,6 +69,8 @@ export const useAuth = () => {
       setLoading(false);
     }
   };
+
+  //TODO : 로그아웃
 
   return { login, kakaoLogin, loading, error };
 };

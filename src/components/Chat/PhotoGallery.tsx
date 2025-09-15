@@ -1,10 +1,11 @@
+// src/components/Chat/PhotoGallery.tsx
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import styled from 'styled-components';
-import { ChatRoom } from '../../types/chat';
+import { ChatRoomResponse } from '../../types/chat';
 
 interface PhotoGalleryProps {
-  getChatRoomById: (id: string) => ChatRoom | undefined;
+  getChatRoomById: (id: string) => ChatRoomResponse | undefined;
 }
 
 const PhotoGallery: React.FC<PhotoGalleryProps> = ({ getChatRoomById }) => {
@@ -27,6 +28,8 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({ getChatRoomById }) => {
 
   if (!room) return <Container>채팅방 정보를 찾을 수 없습니다.</Container>;
 
+  const displayName = room.otherUser.nickname || `사용자 ${room.otherUser.id}`;
+
   return (
     <Container>
       {/* 헤더: 뒤로가기 + 사용자 정보 */}
@@ -38,7 +41,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({ getChatRoomById }) => {
         <UserInfoCenter>
           <Avatar />
           <UserInfo>
-            <UserName>{room.name}</UserName>
+            <UserName>{displayName}</UserName>
             <NickName>아이디</NickName>
           </UserInfo>
         </UserInfoCenter>
@@ -66,8 +69,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({ getChatRoomById }) => {
 
 export default PhotoGallery;
 
-/* ───────────────── styled-components ───────────────── */
-
+// 스타일 컴포넌트들은 기존과 동일...
 const Container = styled.div`
   flex: 1;
   position: relative;
@@ -175,6 +177,7 @@ const Photo = styled.div`
     object-fit: cover;
   }
 `;
+
 const ExitButton = styled.button`
   position: absolute;
   bottom: 24px;

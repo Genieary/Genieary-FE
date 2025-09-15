@@ -1,13 +1,15 @@
+// src/components/Chat/ChatList.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import {ChatRoom } from '../../types/chat';
+import { ChatRoomResponse } from '../../types/chat';
+import { formatTimestamp} from '../../utils/chatUtils';
 
 import { ReactComponent as PlusSvg } from '../../assets/plus.svg';
 import { ReactComponent as SearchSvg } from '../../assets/search.svg';
 
 interface ChatListProps {
-  chatRooms: ChatRoom[];
+  chatRooms: ChatRoomResponse[];
 }
 
 const ChatList: React.FC<ChatListProps> = ({ chatRooms }) => {
@@ -33,21 +35,28 @@ const ChatList: React.FC<ChatListProps> = ({ chatRooms }) => {
         </EmptyState>
       ) : (
         <ChatRoomList>
-          {chatRooms.map((room) => (
-            <ChatRoomItem key={room.id} to={`/friends/chat/${room.id}`}>
-              <AvatarContainer>
-                <Avatar>
-                  {/* 실제 이미지가 없을 때 기본 배경색 */}
-                </Avatar>
-                {room.hasUnreadMessage && <UnreadDot />}
-              </AvatarContainer>
-              <ChatInfo>
-                <RoomName>{room.name}</RoomName>
-                <LastMessage>{room.lastMessage}</LastMessage>
-              </ChatInfo>
-              <Timestamp>{room.timestamp}</Timestamp>
-            </ChatRoomItem>
-          ))}
+          {chatRooms.map((room) => {
+            const displayName = room.otherUser.nickname || `사용자 ${room.otherUser.id}`;
+            const hasUnreadMessage = false; // 추후 읽음 상태 로직 추가
+            
+            return (
+              <ChatRoomItem key={room.roomUuid} to={`/friends/chat/${room.roomUuid}`}>
+                <AvatarContainer>
+                  <Avatar/>
+                  {hasUnreadMessage && <UnreadDot />}
+                </AvatarContainer>
+                <ChatInfo>
+                  <RoomName>{displayName}</RoomName>
+                  <LastMessage>
+                    {room.lastMessage || '대화를 시작해보세요'}
+                  </LastMessage>
+                </ChatInfo>
+                <Timestamp>
+                  {room.lastMessageTime ? formatTimestamp(room.lastMessageTime) : ''}
+                </Timestamp>
+              </ChatRoomItem>
+            );
+          })}
         </ChatRoomList>
       )}
     </ChatListContainer>
@@ -56,6 +65,7 @@ const ChatList: React.FC<ChatListProps> = ({ chatRooms }) => {
 
 export default ChatList;
 
+// 스타일드 컴포넌트들
 const ChatListContainer = styled.div`
   flex: 1;
   background: white;
@@ -72,7 +82,7 @@ const Header = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 22px;
-   padding: 0 0 10px 0;
+  padding: 0 0 10px 0;
   border-bottom: 1px solid #eee;
 `;
 
@@ -81,7 +91,7 @@ const Title = styled.h2`
   font-weight: 700;
   color: #333;
   margin: 0;
-  margin-left:10px;
+  margin-left: 10px;
 `;
 
 const Actions = styled.div`
@@ -89,7 +99,6 @@ const Actions = styled.div`
   gap: 12px;
   align-items: center;
 `;
-
 
 const IconButton = styled.button`
   display: flex;
@@ -106,7 +115,6 @@ const IconButton = styled.button`
   }
 `;
 
-/* SVG 아이콘을 재사용 가능하게 래핑 */
 const PlusIcon = styled(PlusSvg)`
   width: 20px;
   height: 20px;
@@ -117,7 +125,6 @@ const SearchIcon = styled(SearchSvg)`
   width: 18px;
   height: 18px;
 `;
-
 
 const EmptyState = styled.div`
   display: flex;
@@ -170,6 +177,13 @@ const Avatar = styled.div`
   height: 48px;
   border-radius: 50%;
   background: #fff3bf;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #333;
+  font-weight: 600;
+  font-size: 16px;
+  user-select: none;
 `;
 
 const UnreadDot = styled.div`
@@ -181,6 +195,7 @@ const UnreadDot = styled.div`
   background: #ff4444;
   border-radius: 50%;
   border: 2px solid white;
+  z-index: 1;
 `;
 
 const ChatInfo = styled.div`

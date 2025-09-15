@@ -1,72 +1,78 @@
-import React, { useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
+// src/pages/ChatPage.tsx
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import FriendSidebar from '../components/friends/FriendSidebar';
 import ChatList from '../components/Chat/ChatList';
 import ChatRoom from '../components/Chat/ChatRoom';
-import { ChatRoom as ChatRoomType, Message } from '../types/chat';
 import PhotoGallery from '../components/Chat/PhotoGallery';
+import { Message, ChatRoomResponse } from '../types/chat';
+import { useChat, useChatMessages } from '../hooks/useChat';
+import { convertMessageResponse } from '../utils/chatUtils';
+import { AuthService } from '../services/authService';
 
 const ChatPage: React.FC = () => {
-  // 채팅방 더미 데이터
-  const [chatRooms] = useState<ChatRoomType[]>([
-    {
-      id: '1',
-      name: '신정원',
-      lastMessage: '오늘 같이 커피 사갈까?',
-      timestamp: '오후 9:05',
-      hasUnreadMessage: false,
-    },
-    {
-      id: '2',
-      name: '정원왕',
-      lastMessage: '채팅 내용 몰라몰라',
-      timestamp: '어제',
-      hasUnreadMessage: false,
-    },
-    {
-      id: '3',
-      name: '김철수',
-      lastMessage: '안녕하세요!',
-      timestamp: '2025-06-27',
-      hasUnreadMessage: true,
-    },
-    {
-      id: '4',
-      name: '이영희',
-      lastMessage: '내일 만날까요?',
-      timestamp: '2025-06-27',
-      hasUnreadMessage: true,
-    }
-  ]);
+  const { chatRooms, loading, error, fetchChatRooms } = useChat();
+  const currentUserId = AuthService.getUserId();
 
-  // 메시지 더미 데이터
-  const [messages] = useState<Message[]>([
-    {
-      id: '1',
-      content: '오늘 같이 커피 사갈까?',
-      timestamp: '오후 2:30',
-      isMe: false,
-      type: 'text'
-    },
-    {
-      id: '2',
-      content: '좋아요! 몇 시에 만날까요?',
-      timestamp: '오후 2:32',
-      isMe: true,
-      type: 'text'
-    }
-  ]);
+  // 컴포넌트 마운트 시 채팅방 목록 로드
+  useEffect(() => {
+    fetchChatRooms();
+  }, [fetchChatRooms]);
 
   const handleSendMessage = (content: string) => {
     console.log('Sending message:', content);
-    // 실제로는 여기서 메시지를 서버로 전송하고 상태를 업데이트
+    // WebSocket 구현 시 여기에 메시지 전송 로직 추가
   };
 
   // 채팅방 정보 가져오기
-  const getChatRoomById = (id: string) => {
-    return chatRooms.find(room => room.id === id);
+  const getChatRoomById = (roomUuid: string) => {
+    return chatRooms.find(room => room.roomUuid === roomUuid);
   };
+
+  // 로그인하지 않은 경우 처리
+  if (!currentUserId) {
+    return (
+      <PageContainer>
+        <FriendSidebar />
+        <ContentArea>
+          <ErrorContainer>
+            <div>로그인이 필요합니다.</div>
+            <button onClick={() => window.location.href = '/login'}>
+              로그인하러 가기
+            </button>
+          </ErrorContainer>
+        </ContentArea>
+      </PageContainer>
+    );
+  }
+
+  if (loading) {
+    return (
+      <PageContainer>
+        <FriendSidebar />
+        <ContentArea>
+          <LoadingContainer>
+            <div>채팅방을 불러오는 중...</div>
+          </LoadingContainer>
+        </ContentArea>
+      </PageContainer>
+    );
+  }
+
+  if (error) {
+    return (
+      <PageContainer>
+        <FriendSidebar />
+        <ContentArea>
+          <ErrorContainer>
+            <div>오류가 발생했습니다: {error}</div>
+            <button onClick={fetchChatRooms}>다시 시도</button>
+          </ErrorContainer>
+        </ContentArea>
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer>
@@ -80,11 +86,11 @@ const ChatPage: React.FC = () => {
           <Route 
             path="/:id" 
             element={
-              <ChatRoom 
-                messages={messages} 
+              <ChatRoomWithData 
                 onSendMessage={handleSendMessage}
                 chatRooms={chatRooms}
                 getChatRoomById={getChatRoomById}
+                currentUserId={currentUserId}
               />
             } 
           />
@@ -98,7 +104,54 @@ const ChatPage: React.FC = () => {
   );
 };
 
+// ChatRoom 컴포넌트에 데이터 로딩 로직을 추가한 래퍼 컴포넌트
+interface ChatRoomWithDataProps {
+  onSendMessage: (content: string) => void;
+  chatRooms: ChatRoomResponse[];
+  getChatRoomById: (roomUuid: string) => ChatRoomResponse | undefined;
+  currentUserId: number;
+}
+
+const ChatRoomWithData: React.FC<ChatRoomWithDataProps> = ({ 
+  onSendMessage, 
+  chatRooms, 
+  getChatRoomById,
+  currentUserId 
+}) => {
+  const { id } = useParams<{ id: string }>();
+  const { messages: apiMessages, loading, error } = useChatMessages(id || null);
+  const [messages, setMessages] = useState<Message[]>([]);
+
+  // API 메시지를 UI 형태로 변환
+  useEffect(() => {
+    if (apiMessages.length > 0 && currentUserId) {
+      const convertedMessages = apiMessages.map(msg => 
+        convertMessageResponse(msg, currentUserId)
+      );
+      setMessages(convertedMessages);
+    }
+  }, [apiMessages, currentUserId]);
+
+  if (loading) {
+    return <div>메시지를 불러오는 중...</div>;
+  }
+
+  if (error) {
+    return <div>메시지 로드 중 오류가 발생했습니다: {error}</div>;
+  }
+
+  return (
+    <ChatRoom 
+      messages={messages}
+      onSendMessage={onSendMessage}
+      chatRooms={chatRooms}
+      getChatRoomById={getChatRoomById}
+    />
+  );
+};
+
 export default ChatPage;
+
 
 const PageContainer = styled.div`
   display: flex;
@@ -114,4 +167,40 @@ const ContentArea = styled.div`
   display: flex;
   flex-direction: column;
 align-self: stretch;
+`;
+
+
+const LoadingContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+`;
+
+const ErrorContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  gap: 16px;
+  
+  button {
+    padding: 8px 16px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    
+    &:hover {
+      background: #0056b3;
+    }
+  }
 `;

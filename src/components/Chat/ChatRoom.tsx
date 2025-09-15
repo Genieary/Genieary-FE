@@ -1,16 +1,17 @@
+// src/components/Chat/ChatRoom.tsx
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { Message, ChatRoom as ChatRoomType }  from '../../types/chat';
-import { ReactComponent as MenuSvg }   from '../../assets/list.svg';
+import { Message, ChatRoomResponse } from '../../types/chat';
+import { ReactComponent as MenuSvg } from '../../assets/list.svg';
 import { ReactComponent as CameraSvg } from '../../assets/camera.svg';
-import { ReactComponent as SendSvg }   from '../../assets/arrow-up.svg';
+import { ReactComponent as SendSvg } from '../../assets/arrow-up.svg';
 
 interface ChatRoomProps {
   messages: Message[];
   onSendMessage: (content: string) => void;
-  chatRooms: ChatRoomType[];
-  getChatRoomById: (id: string) => ChatRoomType | undefined;
+  chatRooms: ChatRoomResponse[];
+  getChatRoomById: (id: string) => ChatRoomResponse | undefined;
 }
 
 const ChatRoom: React.FC<ChatRoomProps> = ({ 
@@ -33,6 +34,8 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
       </ChatRoomContainer>
     );
   }
+
+  const displayName = currentChatRoom.otherUser.nickname || `사용자 ${currentChatRoom.otherUser.id}`;
 
   const handleSend = () => {
     if (inputValue.trim()) {
@@ -59,11 +62,11 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
       <ChatHeader>
         <BackButton onClick={handleBack}>＜ 채팅 목록</BackButton>
         <UserInfo>
-          <ChatTitle>{currentChatRoom.name}</ChatTitle>
+          <ChatTitle>{displayName}</ChatTitle>
           <UserStatus>아이디</UserStatus>
         </UserInfo>
         <IconButton aria-label="메뉴" onClick={handleMenuClick}>
-         <MenuIcon  />
+         <MenuIcon />
         </IconButton>
       </ChatHeader>
       
@@ -71,7 +74,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
         <MessageGroup>
           <UserAvatar />
           <MessageContent>
-            <UserName>{currentChatRoom.name}</UserName>
+            <UserName>{displayName}</UserName>
             <UserQuestion>오늘 같이 커피 사갈까?</UserQuestion>
           </MessageContent>
         </MessageGroup>
@@ -105,7 +108,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
 
 export default ChatRoom;
 
-// 스타일 컴포넌트들은 이전과 동일...
+// 스타일 컴포넌트들은 기존과 동일...
 const ChatRoomContainer = styled.div`
   flex: 1;
   background: white;
@@ -245,7 +248,6 @@ const MessageInput = styled.input`
   }
 `;
 
-
 const IconButton = styled.button`
   display: flex;
   align-items: center;
@@ -271,6 +273,6 @@ const SendButton = styled(IconButton)`
   }
 `;
 
-const MenuIcon   = styled(MenuSvg)`  width: 18px; height: 18px; fill: #666; `;
-const CameraIcon = styled(CameraSvg)` width: 20px; height: 20px;`;
-const SendIcon   = styled(SendSvg)`   width: 16px; height: 16px; fill: #fff; `;
+const MenuIcon = styled(MenuSvg)`width: 18px; height: 18px; fill: #666;`;
+const CameraIcon = styled(CameraSvg)`width: 20px; height: 20px;`;
+const SendIcon = styled(SendSvg)`width: 16px; height: 16px; fill: #fff;`;
