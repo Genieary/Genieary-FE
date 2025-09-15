@@ -1,12 +1,11 @@
-// src/components/Chat/ChatList.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { ChatRoomResponse } from '../../types/chat';
 import { formatTimestamp} from '../../utils/chatUtils';
-
 import { ReactComponent as PlusSvg } from '../../assets/plus.svg';
 import { ReactComponent as SearchSvg } from '../../assets/search.svg';
+//TODO: 읽음 로직 추가, 프로필 이미지
 
 interface ChatListProps {
   chatRooms: ChatRoomResponse[];
@@ -36,7 +35,7 @@ const ChatList: React.FC<ChatListProps> = ({ chatRooms }) => {
       ) : (
         <ChatRoomList>
           {chatRooms.map((room) => {
-            const displayName = room.otherUser.nickname || `사용자 ${room.otherUser.id}`;
+            const displayName = room.otherUser.nickname || `user${room.otherUser.id}`;
             const hasUnreadMessage = false; // 추후 읽음 상태 로직 추가
             
             return (

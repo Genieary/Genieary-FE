@@ -3,32 +3,18 @@ import { ChatMessageResponse } from '../types/chat';
 import { Message } from '../types/chat';
 
 export const convertMessageResponse = (apiResponse: ChatMessageResponse, currentUserId: number): Message => {
-  let messageType: 'text' | 'image' | 'file' = 'text';
+    const messageType = apiResponse.messageType === 'IMAGE' ? 'image' : 
+                       apiResponse.messageType === 'FILE' ? 'file' : 'text';
   
-  switch (apiResponse.messageType) {
-    case 'IMAGE':
-      messageType = 'image';
-      break;
-    case 'FILE':
-      messageType = 'file';
-      break;
-    case 'CHAT':
-    case 'JOIN':
-    case 'LEAVE':
-    default:
-      messageType = 'text';
-      break;
-  }
-
-  return {
-    id: apiResponse.id.toString(),
-    content: apiResponse.message,
-    timestamp: formatTimestamp(apiResponse.sentAt),
-    isMe: apiResponse.senderId === currentUserId,
-    type: messageType
+    return {
+      id: apiResponse.id.toString(),
+      content: apiResponse.message,
+      timestamp: formatTimestamp(apiResponse.sentAt),
+      isMe: apiResponse.senderId === currentUserId,
+      type: messageType
+    };
   };
-};
-
+  
 // 시간 포맷팅 함수
 export const formatTimestamp = (dateString: string | null): string => {
   if (!dateString) return '';

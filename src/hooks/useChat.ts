@@ -91,56 +91,23 @@ export const useChatMessages = (roomUuid: string | null) => {
     setError(null);
 
     try {
-      const response = await chatApi.getChatMessages(roomUuid, page, 20);
-      
-      if (response.error) {
-        setError(response.error);
-        return;
-      }
-
-      if (response.data) {
-        const newMessages = response.data.content;
+        const response = await chatApi.getChatMessages(roomUuid, 0, 20);
         
-        if (append) {
-          setMessages(prev => [...prev, ...newMessages]);
-        } else {
-          setMessages(newMessages);
+        if (response.error) {
+          setError(response.error);
+          return;
         }
-        
-        setCurrentPage(page);
-        setHasMore(page < response.data.totalPages - 1);
+  
+        if (response.data) {
+          setMessages(response.data.content);
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : '메시지를 불러오는데 실패했습니다.';
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '메시지를 불러오는데 실패했습니다.';
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  }, [roomUuid]);
-
-  // 더 많은 메시지 로드 (무한 스크롤용)
-  const loadMoreMessages = useCallback(() => {
-    if (hasMore && !loading) {
-      fetchMessages(currentPage + 1, true);
-    }
-  }, [hasMore, loading, currentPage, fetchMessages]);
-
-  // roomUuid 변경 시 초기화 및 메시지 로드
-  useEffect(() => {
-    if (roomUuid) {
-      setMessages([]);
-      setCurrentPage(0);
-      setHasMore(true);
-      fetchMessages(0, false);
-    }
-  }, [roomUuid, fetchMessages]);
-
-  return {
-    messages,
-    loading,
-    error,
-    hasMore,
-    fetchMessages,
-    loadMoreMessages
-  };
+    }, [roomUuid]);
+  
+    return { messages, loading, error, fetchMessages };
 };

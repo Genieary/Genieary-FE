@@ -38,9 +38,6 @@ const ChatPage: React.FC = () => {
         <ContentArea>
           <ErrorContainer>
             <div>로그인이 필요합니다.</div>
-            <button onClick={() => window.location.href = '/login'}>
-              로그인하러 가기
-            </button>
           </ErrorContainer>
         </ContentArea>
       </PageContainer>
@@ -67,7 +64,6 @@ const ChatPage: React.FC = () => {
         <ContentArea>
           <ErrorContainer>
             <div>오류가 발생했습니다: {error}</div>
-            <button onClick={fetchChatRooms}>다시 시도</button>
           </ErrorContainer>
         </ContentArea>
       </PageContainer>
@@ -132,14 +128,9 @@ const ChatRoomWithData: React.FC<ChatRoomWithDataProps> = ({
     }
   }, [apiMessages, currentUserId]);
 
-  if (loading) {
-    return <div>메시지를 불러오는 중...</div>;
-  }
-
-  if (error) {
-    return <div>메시지 로드 중 오류가 발생했습니다: {error}</div>;
-  }
-
+  if (loading) return <div>메시지를 불러오는 중...</div>;
+  if (error) return <div>메시지 로드 중 오류가 발생했습니다: {error}</div>;
+  
   return (
     <ChatRoom 
       messages={messages}

@@ -2,7 +2,6 @@ import { ApiClient } from './apiClient';
 import { 
   ChatRoomResponse, 
   ChatMessageResponse, 
-  CreateChatRoomRequest,
   PaginatedResponse 
 } from '../types/chat';
 
