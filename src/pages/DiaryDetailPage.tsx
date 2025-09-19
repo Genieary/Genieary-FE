@@ -26,6 +26,8 @@ const DiaryDetailPage: React.FC<DiaryDetailPageProps> = ({ selectedDate, onBack 
     setPhoto,
     getPhoto,
     clearPhoto,
+    getGifts,
+    setGifts
   } = useCalendar();
 
   const [diaryContent, setDiaryContent] = useState('');
@@ -34,6 +36,7 @@ const DiaryDetailPage: React.FC<DiaryDetailPageProps> = ({ selectedDate, onBack 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
   const [showCamera, setShowCamera] = useState(false);
+  const gifts= getGifts(key);
 
   // 일기 로드 + 편집모드 초기화
   useEffect(() => {
@@ -127,7 +130,28 @@ const handleShare = async () => {
     const stats = { sunny: 68, cloudy: 22, rainy: 10 };
     setPhoto({ date: key, imageDataUrl: dataUrl, summary: resultText, stats });
   };
-
+  useEffect(() => {
+  // 더미 데이터는 한 번만 넣도록 (없을 때만)
+  if (!gifts || gifts.length === 0) {
+    setGifts(key, [
+      {
+        id: 'g1',
+        title: '에어팟 4세대',
+        imageUrl: '/images/airpods.png',
+      },
+      {
+        id: 'g2',
+        title: '비행기',
+        imageUrl: '/images/plane.png',
+      },
+      {
+        id: 'g3',
+        title: '자유',
+        imageUrl: '/images/freedom.png',
+      },
+    ]);
+  }
+}, [key, gifts, setGifts]);
   return (
     <Wrapper>
       <Sidebar>
@@ -141,7 +165,10 @@ const handleShare = async () => {
 
       <Main>
         <Header>
-          <BackButton onClick={onBack}>← 뒤로가기</BackButton>
+          <BackButton onClick={onBack}><svg width="45" height="45" viewBox="0 0 45 45" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M20.25 22.5L28.875 31.125L26.25 33.75L15 22.5L26.25 11.25L28.875 13.875L20.25 22.5Z" fill="#1D1B20"/>
+</svg>
+ </BackButton>
           {/* <HeaderCenter>캘린더</HeaderCenter> */}
           <DateNumber>{selectedDate.getDate()}</DateNumber>
           <HeaderRight>
@@ -178,7 +205,7 @@ const handleShare = async () => {
                 <p>{analysis.summary}</p>
                 {analysis.stats && (
                   <small>
-                    맑음 {analysis.stats.sunny}%, 흐림 {analysis.stats.cloudy}%, 비 {analysis.stats.rainy}%
+                    행복 {analysis.stats.sunny}%, 즐거움 {analysis.stats.cloudy}%, 걱정 {analysis.stats.rainy}%
                   </small>
                 )}
                 <div style={{ marginTop: 8 }}>
@@ -300,6 +327,26 @@ const handleShare = async () => {
             />
           </InputRow>
         </Section>
+        <Section>
+           <SectionTitle>선물 추천</SectionTitle>
+  {gifts && gifts.length > 0 ? (
+    <>
+      <SmallText>오늘의 선물 추천 결과입니다.</SmallText>
+      <GiftGrid>
+        {gifts.map((gift) => (
+          <GiftCard key={gift.id}>
+            <GiftThumb src={gift.imageUrl} alt={gift.title} />
+            <GiftTitle>{gift.title}</GiftTitle>
+          </GiftCard>
+        ))}
+      </GiftGrid>
+    </>
+  ) : (
+    <SmallText>
+      아직 오늘의 선물을 추천 받지 않았어요. <b>추천 기능 페이지</b>에서 추천을 받아보세요!
+    </SmallText>
+  )}
+        </Section>
 
         {/* 카메라 모달 */}
         <CameraModal open={showCamera} onClose={() => setShowCamera(false)} onCapture={handleAnalyzeFromDataUrl} />
@@ -381,7 +428,10 @@ const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  // margin-bottom: 24px;
+  margin-bottom: 40px;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 24px;
+  
 `;
 const BackButton = styled.button`
   background: none;
@@ -454,7 +504,7 @@ const DateNumber = styled.div`
   font-size: 48px;
   font-weight: 300;
   color: #333;
-  margin-bottom: 24px;
+  margin-left: 24px;
 `;
 
 const Section = styled.section`
@@ -662,4 +712,44 @@ const DiaryTextarea = styled.textarea<{ $readonly?: boolean }>`
     outline: none;
     border-color: #007bff;
   }
+`;
+const SmallText = styled.p`
+  font-size: 14px;
+  color: #777;
+  margin-bottom: 16px;
+`;
+
+const GiftGrid = styled.div`
+  display: flex;
+  gap: 16px;
+`;
+
+const GiftCard = styled.div`
+  flex: 1;
+   flex-direction: column;
+  text-align: center;
+`;
+
+const GiftThumb = styled.img`
+  width: 30vh;
+  object-fit: cover;
+  margin-bottom: 8px;
+  
+  height: 30vh;
+  border-radius: 12px;
+  background-color: #f9f9f9;
+  object-fit: cover;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+`;
+
+const GiftTitle = styled.div`
+  // font-size: 14px;
+  // font-weight: 600;
+  // color: #333;
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #000;
+  width: 100%;
+  text-align: left;
 `;

@@ -1,6 +1,12 @@
 // src/store/calendarStore.tsx
 import React, { createContext, useContext, useMemo, useReducer } from 'react';
 
+export type Gift = {
+  id: string;
+  title: string;
+  imageUrl: string;
+};
+
 export type EventItem = {
   id: string;
   date: string;          // 'YYYY-MM-DD'
@@ -22,6 +28,7 @@ type State = {
   events: EventItem[];
   diaries: Record<string, Diary>;
   photoAnalyses: Record<string, PhotoAnalysis>;
+  gifts: Record<string, Gift[]>;
 };
 
 type Action =
@@ -31,7 +38,8 @@ type Action =
   | { type: 'SET_DIARY'; payload: Diary }
   | { type: 'DELETE_DIARY'; payload: { date: string } }
   | { type: 'SET_PHOTO'; payload: PhotoAnalysis }
-  | { type: 'CLEAR_PHOTO'; payload: { date: string } };
+  | { type: 'CLEAR_PHOTO'; payload: { date: string } }
+  | { type: 'SET_GIFTS'; payload: { date: string; gifts: Gift[] } };
 
 const keyOf = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -63,6 +71,8 @@ const reducer = (s: State, a: Action): State => {
       delete next[a.payload.date];
       return { ...s, photoAnalyses: next };
     }
+    case 'SET_GIFTS':
+      return { ...s, gifts: { ...s.gifts, [a.payload.date]: a.payload.gifts } };
     default:
       return s;
   }
@@ -83,6 +93,8 @@ type Ctx = {
   setPhoto: (p: PhotoAnalysis) => void;
   getPhoto: (date: string) => PhotoAnalysis | undefined;
   clearPhoto: (date: string) => void;
+   setGifts: (date: string, gifts: Gift[]) => void;      
+  getGifts: (date: string) => Gift[] | undefined; 
 };
 
 const CalendarContext = createContext<Ctx | null>(null);
@@ -96,6 +108,7 @@ const initialState: State = {
   ],
   diaries: {},
   photoAnalyses: {},
+  gifts: {},
 };
 
 export const CalendarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -132,6 +145,8 @@ export const CalendarProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setPhoto: (p) => dispatch({ type: 'SET_PHOTO', payload: p }),
     getPhoto: (date) => state.photoAnalyses[date],
     clearPhoto: (date) => dispatch({ type: 'CLEAR_PHOTO', payload: { date } }),
+    setGifts: (date, gifts) => dispatch({ type: 'SET_GIFTS', payload: { date, gifts } }),
+    getGifts: (date) => state.gifts[date],
   }), [state]);
 
   return <CalendarContext.Provider value={api}>{children}</CalendarContext.Provider>;
