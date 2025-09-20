@@ -13,7 +13,7 @@ import RecommendPage from './pages/RecommandPage';
 import RecommandResultTemplate from './pages/RecommandResultTemplate';
 import ChatPage from './pages/ChatPage';
 import OnboardingProfilePage from "./pages/OnboardingProfilePage";
-//import OnboardingInterestsPage from "./pages/OnboardingInterestsPage";
+import OnboardingInterestsPage from "./pages/OnboardingInterestsPage";
 
 function App() {
   return (
@@ -35,7 +35,7 @@ function App() {
         <Route path="/friends/search" element={<FriendSearchPage />} />
         <Route path="/mypage" element={<div>마이페이지</div>} />
         <Route path="/onboarding/profile" element={<OnboardingProfilePage />} />
-        
+        <Route path="/onboarding/interests" element={<OnboardingInterestsPage />} />
         <Route path="/onboarding" element={<Navigate to="/onboarding/profile" replace />} />
       </Routes>
     </BrowserRouter>
