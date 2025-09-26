@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar/Navbar';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
@@ -12,8 +12,11 @@ import CalendarPage from './pages/CalendarPage';
 import RecommendPage from './pages/RecommandPage';
 import RecommandResultTemplate from './pages/RecommandResultTemplate';
 import ChatPage from './pages/ChatPage';
+import MyPage from './pages/MyPage';
 
 function App() {
+  const isLoggedIn = !!localStorage.getItem("token");
+
   return (
     <BrowserRouter>
       <Navbar />
@@ -31,7 +34,9 @@ function App() {
         <Route path="/friend-profile/:friendId" element={<FriendProfilePage />} />
         <Route path="/friends/chat/*" element={<ChatPage />} />
         <Route path="/friends/search" element={<FriendSearchPage />} />
-        <Route path="/mypage" element={<div>마이페이지</div>} />
+        <Route path="/mypage/*"
+          element={isLoggedIn ? <MyPage /> : <MyPage/>}/>
+          {/* <Navigate to="/login" /> */}
       </Routes>
     </BrowserRouter>
   );
