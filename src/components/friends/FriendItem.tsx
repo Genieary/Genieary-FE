@@ -4,19 +4,21 @@ import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 
 type FriendItemProps = {
+  id?: number;
   name: string;
-  avatarUrl?: string | null;   // ⬅️ 추가
+  avatarUrl?: string | null; 
   showAddButton?: boolean;
   showDeleteButton?: boolean;
   showCancelButton?: boolean;
   showRejectButton?: boolean;
-  onDelete?: (name: string) => void;
+  onDelete?: (id: number) => void;
   onAdd?: (name: string) => void;
   onCancel?: (name: string) => void;
   onReject?: (name: string) => void;
 };
 
 const FriendItem = ({
+  id,
   name,
   avatarUrl,
   showAddButton = false,
@@ -30,8 +32,9 @@ const FriendItem = ({
 }: FriendItemProps) => {
   const navigate = useNavigate();
   const handleGiftClick = () => navigate(`/friend-profile/${name}`);
-  const handleDelete = () => onDelete?.(name);
-
+  const handleDelete = () => {
+   if (id !== undefined) onDelete?.(id);
+ };
   return (
     <ItemWrapper>
       {avatarUrl ? (

@@ -1,39 +1,39 @@
-// src/components/FriendList.tsx
+// src/components/friends/FriendList.tsx
 import React, { useEffect, useState } from 'react';
-import styled from 'styled-components';
 import FriendItem from './FriendItem';
-import { getFriendList, Friend } from '../../api/friends';
+import styled from 'styled-components';
+import { getFriendList, deleteFriend, Friend } from '../../api/friends';
 
 const recommendedFriends = ['가네키 켄'];
 
 const FriendList = () => {
   const [isManaging, setIsManaging] = useState(false);
   const [friends, setFriends] = useState<Friend[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleToggleManage = () => setIsManaging(v => !v);
-
-  const handleDelete = (name: string) => {
-    // TODO: /api/friend/{id} 삭제 API 연결 예정
-    alert(`'${name}' 삭제 (stub)`);
-  };
 
   useEffect(() => {
     (async () => {
       try {
-        setLoading(true);
-        const data = await getFriendList();
-        setFriends(data);
-        setError(null);
+        const list = await getFriendList();
+        setFriends(list);
       } catch (e) {
-        setError(e instanceof Error ? e.message : '친구 목록 불러오기 실패');
-      } finally {
-        setLoading(false);
+        console.error(e);
       }
     })();
   }, []);
 
+  const handleToggleManage = () => setIsManaging(v => !v);
+
+  const handleDelete = async (friendUserId: number) => {
+  if (!window.confirm('정말 삭제할까요?')) return;
+  try {
+    await deleteFriend(friendUserId);
+    setFriends(prev => prev.filter(f => f.friendId !== friendUserId));
+    alert('삭제되었습니다.');
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : '서버 에러, 관리자에게 문의 바랍니다.';
+    alert(msg);
+  }
+};
   return (
     <ListWrapper>
       <Section>
@@ -44,25 +44,25 @@ const FriendList = () => {
           </ManageButton>
         </SectionHeader>
 
-        {loading && <Info>불러오는 중…</Info>}
-        {error && <Info style={{ color: '#e85c5a' }}>에러: {error}</Info>}
-        {!loading && !error && friends.length === 0 && <Info>친구가 없습니다.</Info>}
-
-        {!loading && !error && friends.map((f) => (
-          <FriendItem
-            key={f.friendId}
-            name={f.nickname}
-            avatarUrl={f.profileImage}
-            showDeleteButton={isManaging}
-            onDelete={handleDelete}
-          />
-        ))}
+        {friends.length === 0 ? (
+          <EmptyRow>아직 친구가 없어요.</EmptyRow>
+        ) : (
+          friends.map(f => (
+            <FriendItem
+              key={f.friendId}
+              id={f.friendId}
+              name={f.nickname}
+              showDeleteButton={isManaging}
+              onDelete={handleDelete}
+            />
+          ))
+        )}
       </Section>
 
       <Section>
         <SectionTitle>추천 친구</SectionTitle>
-        {recommendedFriends.map((friend) => (
-          <FriendItem key={friend} name={friend} showAddButton />
+        {recommendedFriends.map(friend => (
+          <FriendItem key={friend} id={-1} name={friend} showAddButton /> 
         ))}
       </Section>
     </ListWrapper>
@@ -111,4 +111,11 @@ const ManageButton = styled.button`
 const Info = styled.div`
   padding: 16px 0;
   color: #666;
+`;
+
+const EmptyRow = styled.div`
+  padding: 24px 0;
+  color: #aaa;
+  font-size: 14px;
+  border-bottom: 1px solid #eee;
 `;

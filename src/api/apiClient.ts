@@ -1,21 +1,20 @@
 // src/api/apiClient.ts
 import { ApiResponse } from '../types/auth';
 
-const API_BASE_URL =
-  process.env.REACT_APP_API_URL /* CRA */ ||
-  (import.meta as any)?.env?.VITE_API_BASE_URL /* Vite */ ||
-  'http://localhost:8080';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 
 export class ApiClient {
   private static instance: ApiClient;
   private baseURL: string;
 
   private constructor() {
-    this.baseURL = API_BASE_URL.replace(/\/+$/, ''); // trailing slash 제거
+    this.baseURL = API_BASE_URL;
   }
 
   public static getInstance(): ApiClient {
-    if (!ApiClient.instance) ApiClient.instance = new ApiClient();
+    if (!ApiClient.instance) {
+      ApiClient.instance = new ApiClient();
+    }
     return ApiClient.instance;
   }
 
@@ -24,26 +23,45 @@ export class ApiClient {
       const url = `${this.baseURL}/${endpoint.replace(/^\//, '')}`;
 
       const token = localStorage.getItem('accessToken');
-      const defaultHeaders: Record<string, string> = {
+
+      const defaultHeaders: HeadersInit = {
         'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       };
-      if (token) defaultHeaders['Authorization'] = `Bearer ${token}`;
 
       const config: RequestInit = {
-        method: 'GET',
+        // 프런트가 쿠키를 쓸 일이 생기면 아래 주석 해제
+        // credentials: 'include',
         ...options,
-        headers: { ...defaultHeaders, ...(options.headers as any) },
+        headers: {
+          ...defaultHeaders,
+          ...(options.headers || {}),
+        },
       };
 
-      const response = await fetch(url, config);
-      const data = await response.json().catch(() => null);
+      const res = await fetch(url, config);
 
-      if (!response.ok) {
-        return { error: (data && data.message) || `HTTP ${response.status}`, status: response.status };
+      // 본문이 없을 수도 있으니 안전 파싱
+      let data: any = null;
+      const ct = res.headers.get('content-type') || '';
+      if (ct.includes('application/json')) {
+        data = await res.json();
       }
-      return { data, status: response.status };
-    } catch (error) {
-      return { error: error instanceof Error ? error.message : 'Unknown error', status: 500 };
+
+      // 백엔드가 ApiResponse 래퍼를 줄 때 실패인 경우까지 에러로 매핑
+      if (!res.ok || (data && data.isSuccess === false)) {
+        const message =
+          (data && (data.message || data.error)) ||
+          `HTTP error! status: ${res.status}`;
+        return { error: message, status: res.status };
+      }
+
+      return { data, status: res.status };
+    } catch (e) {
+      return {
+        error: e instanceof Error ? e.message : 'Unknown error occurred',
+        status: 500,
+      };
     }
   }
 }
