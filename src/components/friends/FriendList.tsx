@@ -1,18 +1,38 @@
-import React, { useState } from 'react';
-import FriendItem from './FriendItem';
+// src/components/FriendList.tsx
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
+import FriendItem from './FriendItem';
+import { getFriendList, Friend } from '../../api/friends';
 
-const friends = ['정원쨩', '권아림', '아리무', '도카쨩'];
 const recommendedFriends = ['가네키 켄'];
 
 const FriendList = () => {
   const [isManaging, setIsManaging] = useState(false);
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleToggleManage = () => setIsManaging((v) => !v);
+  const handleToggleManage = () => setIsManaging(v => !v);
 
   const handleDelete = (name: string) => {
+    // TODO: /api/friend/{id} 삭제 API 연결 예정
     alert(`'${name}' 삭제 (stub)`);
   };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        const data = await getFriendList();
+        setFriends(data);
+        setError(null);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : '친구 목록 불러오기 실패');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   return (
     <ListWrapper>
@@ -24,10 +44,15 @@ const FriendList = () => {
           </ManageButton>
         </SectionHeader>
 
-        {friends.map((friend) => (
+        {loading && <Info>불러오는 중…</Info>}
+        {error && <Info style={{ color: '#e85c5a' }}>에러: {error}</Info>}
+        {!loading && !error && friends.length === 0 && <Info>친구가 없습니다.</Info>}
+
+        {!loading && !error && friends.map((f) => (
           <FriendItem
-            key={friend}
-            name={friend}
+            key={f.friendId}
+            name={f.nickname}
+            avatarUrl={f.profileImage}
             showDeleteButton={isManaging}
             onDelete={handleDelete}
           />
@@ -37,11 +62,7 @@ const FriendList = () => {
       <Section>
         <SectionTitle>추천 친구</SectionTitle>
         {recommendedFriends.map((friend) => (
-          <FriendItem
-            key={friend}
-            name={friend}
-            showAddButton
-          />
+          <FriendItem key={friend} name={friend} showAddButton />
         ))}
       </Section>
     </ListWrapper>
@@ -84,6 +105,10 @@ const ManageButton = styled.button`
   cursor: pointer;
   transition: color 0.2s;
   text-decoration: underline;
-
   &:hover { color: #555; }
+`;
+
+const Info = styled.div`
+  padding: 16px 0;
+  color: #666;
 `;
