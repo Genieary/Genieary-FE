@@ -32,3 +32,34 @@ export async function deleteFriend(friendUserId: number): Promise<void> {
   if ('error' in res) throw new Error(res.error);
   if (!res.data?.isSuccess) throw new Error(res.data?.message || '삭제 실패');
 }
+
+export type FriendSearchResult = {
+  friendId: number;
+  nickname: string;
+  profileImage?: string | null;
+  email: string;
+};
+
+export async function searchFriends(
+  nickname: string,
+  page = 0,
+  size = 10
+): Promise<FriendSearchResult[]> {
+  const token = getAuthToken();
+  const qs = new URLSearchParams({
+    nickname,
+    page: String(page),
+    size: String(size),
+  }).toString();
+
+  const res = await api.request<ApiEnvelope<FriendSearchResult[]>>(
+    `api/friend/search?${qs}`,
+    {
+      method: 'GET',
+      headers: { Authorization: token ? `Bearer ${token}` : '' },
+    }
+  );
+
+  if ('error' in res) throw new Error(res.error);
+  return res.data?.result ?? [];
+}
