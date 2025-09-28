@@ -6,6 +6,7 @@ import {
   getFriendRequestBox,
   approveRequest,
   rejectRequest,
+  cancelSentRequest,
   type FriendRequestBox
 } from '../../api/friendRequests';
 
@@ -30,10 +31,16 @@ const FriendRequestList = () => {
 
   const toggleManage = () => setIsManaging(v => !v);
 
-  // TODO: 보낸 요청 취소 API 생기면 여기 연결
-  const onCancel = (requestId: number) => alert(`요청 ${requestId} 취소 (stub)`);
+  const onCancel = async (requestId: number) => {
+  try {
+    await cancelSentRequest(requestId);
+    setSent(prev => prev.filter(s => s.requestId !== requestId));
+  } catch (e) {
+    console.error(e);
+    alert('취소 중 오류가 발생했어요.');
+  }
+};
 
-  // ✅ 승인 API 연결
   const onAccept = async (requestId: number) => {
     try {
       await approveRequest(requestId);
@@ -46,7 +53,6 @@ const FriendRequestList = () => {
     }
   };
 
-  // ✅ 거절 API 연결
   const onReject = async (requestId: number) => {
     try {
       await rejectRequest(requestId);

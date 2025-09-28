@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import FriendSearchItem from './FriendSearchItem';
 import { searchFriends, type FriendSearchResult } from '../../api/friends';
+import { sendFriendRequest } from '../../api/friendRequests';
 
 const PANEL_HEIGHT = 600;
 
@@ -37,8 +38,14 @@ const FriendSearch = () => {
     }
   };
 
-  const onAdd = (name: string) => {
-    alert(`'${name}'에게 친구 신청 보냄 (stub)`);
+  const onAdd = async (receiverId: number) => {
+    try {
+      await sendFriendRequest(receiverId);
+      alert('친구 요청을 보냈어요!');
+    } catch (err) {
+      console.error(err);
+      alert('친구 요청 중 오류가 발생했습니다.');
+    }
   };
 
   const showEmpty =
@@ -78,7 +85,7 @@ const FriendSearch = () => {
                   name={u.nickname}
                   // 필요하면 아바타 사용:
                   // avatarUrl={u.profileImage ?? undefined}
-                  onAdd={onAdd}
+                  onAdd={(/*name*/) => onAdd(u.friendId)} 
                 />
               ))}
             </List>

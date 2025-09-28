@@ -50,3 +50,26 @@ export async function rejectRequest(requestId: number): Promise<void> {
   if ('error' in res) throw new Error(res.error);
   if (!res.data?.isSuccess) throw new Error(res.data?.message || '거절 실패');
 }
+
+export const cancelSentRequest = async (requestId: number) => {
+  const api = ApiClient.getInstance();
+  const token = localStorage.getItem('accessToken');
+  const res = await api.request<any>(`api/friend/request/${requestId}`, {
+    method: 'DELETE',
+    headers: { Authorization: token ? `Bearer ${token}` : '' },
+  });
+  if ('error' in res) throw new Error(res.error);
+  if (!res.data?.isSuccess) throw new Error(res.data?.message || '취소 실패');
+  return true;
+};
+
+export async function sendFriendRequest(receiverId: number): Promise<void> {
+  const token = getAuthToken();
+  const res = await api.request<ApiEnvelope<null>>('api/friend', {
+    method: 'POST',
+    headers: { Authorization: token ? `Bearer ${token}` : '' },
+    body: JSON.stringify({ receiverId }),
+  });
+  if ('error' in res) throw new Error(res.error);
+  if (!res.data?.isSuccess) throw new Error(res.data?.message || '요청 실패');
+}
