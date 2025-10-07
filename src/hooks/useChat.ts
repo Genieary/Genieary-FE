@@ -2,11 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { ChatApi } from '../api/chatApi';
 import { ChatRoomResponse, ChatMessageResponse, PaginatedResponse } from '../types/chat';
 
+const chatApi = new ChatApi();
+
 export const useChat = () => {
   const [chatRooms, setChatRooms] = useState<ChatRoomResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const chatApi = new ChatApi();
 
   // 채팅방 목록 조회
   const fetchChatRooms = useCallback(async () => {
@@ -76,22 +77,18 @@ export const useChat = () => {
 
 // 채팅 메시지 관리를 위한 별도 훅
 export const useChatMessages = (roomUuid: string | null) => {
-  const [messages, setMessages] = useState<ChatMessageResponse[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(true);
-  const [currentPage, setCurrentPage] = useState(0);
-  const chatApi = new ChatApi();
-
-  // 메시지 조회
-  const fetchMessages = useCallback(async (page: number = 0, append: boolean = false) => {
-    if (!roomUuid) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-        const response = await chatApi.getChatMessages(roomUuid, 0, 20);
+    const [messages, setMessages] = useState<ChatMessageResponse[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+  
+    const fetchMessages = useCallback(async () => {
+      if (!roomUuid) return;
+  
+      setLoading(true);
+      setError(null);
+  
+      try {
+        const response = await chatApi.getChatMessages(roomUuid, 0, 50); // 최근 50개 메시지 로드
         
         if (response.error) {
           setError(response.error);
@@ -110,4 +107,4 @@ export const useChatMessages = (roomUuid: string | null) => {
     }, [roomUuid]);
   
     return { messages, loading, error, fetchMessages };
-};
+  };

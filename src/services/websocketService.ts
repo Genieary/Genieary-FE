@@ -14,7 +14,7 @@ export class WebSocketService {
   private static instance: WebSocketService;
   private client: Client | null = null;
   private isConnected = false;
-  private messageCallbacks: Map<string, (message: any) => void> = new Map();
+  private subscriptions: Map<string, any> = new Map();
 
   private constructor() {}
 
@@ -26,19 +26,18 @@ export class WebSocketService {
   }
 
   connect(): Promise<void> {
+    if (this.isConnected && this.client?.connected) {
+      return Promise.resolve();
+    }
+
     return new Promise((resolve, reject) => {
-      if (this.isConnected && this.client) {
-        resolve();
-        return;
-      }
-      
       const token = AuthService.getAccessToken();
       if (!token) {
         reject(new Error('No access token available'));
         return;
       }
 
-      const socket = new SockJS('http://localhost:8080/ws');
+      const socket = new SockJS('http://localhost:8080/ws'); // 수정 필요한가?
       this.client = new Client({
         webSocketFactory: () => socket,
         connectHeaders: {
@@ -67,18 +66,20 @@ export class WebSocketService {
       throw new Error('WebSocket not connected');
     }
 
-    const destination = `/topic/chat/${roomUuid}`;
-    
-    this.client.subscribe(destination, (message: IMessage) => {
+    // 기존 구독 해제
+    if (this.subscriptions.has(roomUuid)) {
+      this.subscriptions.get(roomUuid).unsubscribe();
+    }
+
+    const subscription = this.client.subscribe(`/topic/chat/${roomUuid}`, (message: IMessage) => {
       try {
-        const data = JSON.parse(message.body);
-        callback(data);
+        callback(JSON.parse(message.body));
       } catch (error) {
         console.error('Error parsing message:', error);
       }
     });
 
-    this.messageCallbacks.set(roomUuid, callback);
+    this.subscriptions.set(roomUuid, subscription);
   }
 
   sendMessage(roomUuid: string, message: string): void {
@@ -91,16 +92,14 @@ export class WebSocketService {
       throw new Error('User not authenticated');
     }
 
-    const messageData: WebSocketMessage = {
-      message,
-      messageType: 'CHAT',
-      senderId: userId,
-      roomUuid
-    };
-
     this.client.publish({
       destination: `/app/chat/${roomUuid}`,
-      body: JSON.stringify(messageData)
+      body: JSON.stringify({
+        message,
+        messageType: 'CHAT',
+        senderId: userId,
+        roomUuid
+      })
     });
   }
 
@@ -116,17 +115,19 @@ export class WebSocketService {
   }
 
   unsubscribeFromRoom(roomUuid: string): void {
-    if (this.messageCallbacks.has(roomUuid)) {
-      this.messageCallbacks.delete(roomUuid);
+    if (this.subscriptions.has(roomUuid)) {
+      this.subscriptions.get(roomUuid).unsubscribe();
+      this.subscriptions.delete(roomUuid);
     }
   }
 
   disconnect(): void {
     if (this.client) {
+      this.subscriptions.forEach(sub => sub.unsubscribe());
+      this.subscriptions.clear();
       this.client.deactivate();
       this.client = null;
       this.isConnected = false;
-      this.messageCallbacks.clear();
     }
   }
 

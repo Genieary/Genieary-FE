@@ -2,6 +2,7 @@
   id: string;
   content: string;
   timestamp: string;
+  sentAt?: string;
   isMe: boolean;
   type: 'text' | 'image'| 'file';
 }

@@ -6,9 +6,7 @@ import FriendSidebar from '../components/friends/FriendSidebar';
 import ChatList from '../components/Chat/ChatList';
 import ChatRoom from '../components/Chat/ChatRoom';
 import PhotoGallery from '../components/Chat/PhotoGallery';
-import { Message, ChatRoomResponse } from '../types/chat';
 import { useChat, useChatMessages } from '../hooks/useChat';
-import { convertMessageResponse } from '../utils/chatUtils';
 import { AuthService } from '../services/authService';
 
 const ChatPage: React.FC = () => {
@@ -19,12 +17,6 @@ const ChatPage: React.FC = () => {
   useEffect(() => {
     fetchChatRooms();
   }, [fetchChatRooms]);
-
-  const handleSendMessage = (content: string) => {
-    console.log('Sending message:', content);
-    // WebSocket으로 메시지 전송하므로 여기서는 로그만 출력
-    console.log('Message sent via WebSocket:', content);
-  };
 
   // 채팅방 정보 가져오기
   const getChatRoomById = (roomUuid: string) => {
@@ -83,11 +75,9 @@ const ChatPage: React.FC = () => {
           <Route 
             path="/:id" 
             element={
-              <ChatRoomWithData 
-                onSendMessage={handleSendMessage}
+              <ChatRoom 
                 chatRooms={chatRooms}
                 getChatRoomById={getChatRoomById}
-                currentUserId={currentUserId}
               />
             } 
           />
@@ -98,47 +88,6 @@ const ChatPage: React.FC = () => {
         </Routes>
       </ContentArea>
     </PageContainer>
-  );
-};
-
-// ChatRoom 컴포넌트에 데이터 로딩 로직을 추가한 래퍼 컴포넌트
-interface ChatRoomWithDataProps {
-  onSendMessage: (content: string) => void;
-  chatRooms: ChatRoomResponse[];
-  getChatRoomById: (roomUuid: string) => ChatRoomResponse | undefined;
-  currentUserId: number;
-}
-
-const ChatRoomWithData: React.FC<ChatRoomWithDataProps> = ({ 
-  onSendMessage, 
-  chatRooms, 
-  getChatRoomById,
-  currentUserId 
-}) => {
-  const { id } = useParams<{ id: string }>();
-  const { messages: apiMessages, loading, error } = useChatMessages(id || null);
-  const [messages, setMessages] = useState<Message[]>([]);
-
-  // API 메시지를 UI 형태로 변환
-  useEffect(() => {
-    if (apiMessages.length > 0 && currentUserId) {
-      const convertedMessages = apiMessages.map(msg => 
-        convertMessageResponse(msg, currentUserId)
-      );
-      setMessages(convertedMessages);
-    }
-  }, [apiMessages, currentUserId]);
-
-  if (loading) return <div>메시지를 불러오는 중...</div>;
-  if (error) return <div>메시지 로드 중 오류가 발생했습니다: {error}</div>;
-
-  return (
-    <ChatRoom 
-      messages={messages}
-      onSendMessage={onSendMessage}
-      chatRooms={chatRooms}
-      getChatRoomById={getChatRoomById}
-    />
   );
 };
 
