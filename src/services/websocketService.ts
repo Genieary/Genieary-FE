@@ -37,7 +37,7 @@ export class WebSocketService {
         return;
       }
 
-      const socket = new SockJS('http://localhost:8080/ws'); // 수정 필요한가?
+      const socket = new SockJS('https://genieary.site/ws'); // 수정 필요한가?
       this.client = new Client({
         webSocketFactory: () => socket,
         connectHeaders: {
