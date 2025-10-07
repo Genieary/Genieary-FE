@@ -241,6 +241,7 @@ const ChatHeader = styled.div`
   justify-content: space-between;
   padding: 16px 24px;
   border-bottom: 1px solid #eee;
+  position: relative;
 `;
 
 const BackButton = styled.button`
@@ -252,6 +253,9 @@ const BackButton = styled.button`
 `;
 
 const UserInfo = styled.div`
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
