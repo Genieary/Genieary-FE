@@ -63,3 +63,36 @@ export async function searchFriends(
   if ('error' in res) throw new Error(res.error);
   return res.data?.result ?? [];
 }
+
+export type RecommendedFriend = {
+  userId: number;
+  nickname: string;
+  profileImg?: string | null;
+  totalOverlap: number;
+  personalityOverlap: number;
+  interestOverlap: number;
+};
+
+export async function getRecommendedFriends(params?: {
+  mode?: 'overlap' | 'random';   // 1번 방식: 하나의 엔드포인트에서 모드 전환
+  limit?: number;                // 최대 추천 수
+  overlapMin?: number;           // overlap 기준 (기본 2)
+}): Promise<RecommendedFriend[]> {
+  const token = getAuthToken();
+  const q = new URLSearchParams();
+  if (params?.mode) q.set('mode', params.mode);
+  if (params?.limit) q.set('limit', String(params.limit));
+  if (params?.overlapMin) q.set('overlapMin', String(params.overlapMin));
+
+  const path = q.toString()
+    ? `api/friend/recommendations?${q}`
+    : 'api/friend/recommendations';
+
+  const res = await api.request<ApiEnvelope<RecommendedFriend[]>>(path, {
+    method: 'GET',
+    headers: { Authorization: token ? `Bearer ${token}` : '' },
+  });
+
+  if ('error' in res) throw new Error(res.error);
+  return res.data?.result ?? [];
+}

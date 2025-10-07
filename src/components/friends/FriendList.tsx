@@ -1,14 +1,26 @@
 // src/components/friends/FriendList.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import FriendItem from './FriendItem';
 import styled from 'styled-components';
-import { getFriendList, deleteFriend, Friend } from '../../api/friends';
-
-const recommendedFriends = ['가네키 켄'];
+import {
+  getFriendList,
+  deleteFriend,
+  Friend,
+  RecommendedFriend,
+  getRecommendedFriends,
+} from '../../api/friends';
+import { sendFriendRequest } from '../../api/friendRequests';
 
 const FriendList = () => {
   const [isManaging, setIsManaging] = useState(false);
   const [friends, setFriends] = useState<Friend[]>([]);
+
+  const [reco, setReco] = useState<RecommendedFriend[]>([]);
+  const [recoMode, setRecoMode] = useState<'overlap' | 'random'>('overlap');
+  const [loadingReco, setLoadingReco] = useState(false);
+
+  const [sendingId, setSendingId] = useState<number | null>(null);
+  const [sentIds, setSentIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     (async () => {
@@ -21,19 +33,55 @@ const FriendList = () => {
     })();
   }, []);
 
+  const fetchReco = useCallback(async () => {
+    setLoadingReco(true);
+    try {
+      const list = await getRecommendedFriends({
+        mode: recoMode,
+        overlapMin: 2,
+        limit: 5,
+      });
+      setReco(list);
+    } catch (e) {
+      console.error(e);
+      setReco([]);
+    } finally {
+      setLoadingReco(false);
+    }
+  }, [recoMode]);
+
+  useEffect(() => {
+    fetchReco();
+  }, [fetchReco]);
+
   const handleToggleManage = () => setIsManaging(v => !v);
 
   const handleDelete = async (friendUserId: number) => {
-  if (!window.confirm('정말 삭제할까요?')) return;
-  try {
-    await deleteFriend(friendUserId);
-    setFriends(prev => prev.filter(f => f.friendId !== friendUserId));
-    alert('삭제되었습니다.');
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : '서버 에러, 관리자에게 문의 바랍니다.';
-    alert(msg);
-  }
-};
+    if (!window.confirm('정말 삭제할까요?')) return;
+    try {
+      await deleteFriend(friendUserId);
+      setFriends(prev => prev.filter(f => f.friendId !== friendUserId));
+      alert('삭제되었습니다.');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '서버 에러, 관리자에게 문의 바랍니다.';
+      alert(msg);
+    }
+  };
+
+  const handleAdd = async (targetUserId: number) => {
+    if (sendingId !== null) return;
+    try {
+      setSendingId(targetUserId);
+      await sendFriendRequest(targetUserId);
+      setReco(prev => prev.filter(u => u.userId !== targetUserId));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '요청 실패';
+      alert(msg);
+    } finally {
+      setSendingId(null);
+    }
+  };
+
   return (
     <ListWrapper>
       <Section>
@@ -60,10 +108,26 @@ const FriendList = () => {
       </Section>
 
       <Section>
-        <SectionTitle>추천 친구</SectionTitle>
-        {recommendedFriends.map(friend => (
-          <FriendItem key={friend} id={-1} name={friend} showAddButton /> 
-        ))}
+        <SectionHeader>
+          <SectionTitle>추천 친구</SectionTitle>
+        </SectionHeader>
+
+        {loadingReco ? (
+          <Info>불러오는 중…</Info>
+        ) : reco.length === 0 ? (
+          <EmptyRow>추천할 친구가 없어요.</EmptyRow>
+        ) : (
+          reco.map(u => (
+            <FriendItem
+              key={u.userId}
+              id={u.userId}
+              name={u.nickname}
+              profileImg={u.profileImg ?? undefined}
+              showAddButton={!sentIds.has(u.userId) && sendingId !== u.userId}
+              onAdd={handleAdd}
+            />
+          ))
+        )}
       </Section>
     </ListWrapper>
   );

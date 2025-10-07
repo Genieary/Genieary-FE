@@ -4,15 +4,17 @@ import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 
 type FriendItemProps = {
-  id?: number;
+  id: number;
   name: string;
+  profileImg?: string | null;
+  profileImage?: string | null;
   avatarUrl?: string | null; 
   showAddButton?: boolean;
   showDeleteButton?: boolean;
   showCancelButton?: boolean;
   showRejectButton?: boolean;
   onDelete?: (id: number) => void;
-  onAdd?: (name: string) => void;
+  onAdd?: (id: number) => void | Promise<void>;
   onCancel?: (name: string) => void;
   onReject?: (name: string) => void;
 };
@@ -53,7 +55,7 @@ const FriendItem = ({
 
       <ButtonGroup>
         {showAddButton && (
-          <AddFriendButton onClick={() => onAdd?.(name)}>
+          <AddFriendButton onClick={() => onAdd?.(id)}>
             친구 추가 <AddFriendIcon />
           </AddFriendButton>
         )}
