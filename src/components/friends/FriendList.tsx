@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import FriendItem from './FriendItem';
 import styled from 'styled-components';
 
@@ -6,22 +6,42 @@ const friends = ['정원쨩', '권아림', '아리무', '도카쨩'];
 const recommendedFriends = ['가네키 켄'];
 
 const FriendList = () => {
+  const [isManaging, setIsManaging] = useState(false);
+
+  const handleToggleManage = () => setIsManaging((v) => !v);
+
+  const handleDelete = (name: string) => {
+    alert(`'${name}' 삭제 (stub)`);
+  };
+
   return (
     <ListWrapper>
       <Section>
         <SectionHeader>
-            <SectionTitle>친구</SectionTitle>
-            <ManageButton>친구 목록 관리</ManageButton>
+          <SectionTitle>친구</SectionTitle>
+          <ManageButton onClick={handleToggleManage}>
+            {isManaging ? '친구 목록 저장' : '친구 목록 관리'}
+          </ManageButton>
         </SectionHeader>
+
         {friends.map((friend) => (
-          <FriendItem key={friend} name={friend} />
+          <FriendItem
+            key={friend}
+            name={friend}
+            showDeleteButton={isManaging}
+            onDelete={handleDelete}
+          />
         ))}
       </Section>
 
       <Section>
         <SectionTitle>추천 친구</SectionTitle>
         {recommendedFriends.map((friend) => (
-            <FriendItem name={friend} showAddButton />
+          <FriendItem
+            key={friend}
+            name={friend}
+            showAddButton
+          />
         ))}
       </Section>
     </ListWrapper>
@@ -64,4 +84,6 @@ const ManageButton = styled.button`
   cursor: pointer;
   transition: color 0.2s;
   text-decoration: underline;
+
+  &:hover { color: #555; }
 `;
