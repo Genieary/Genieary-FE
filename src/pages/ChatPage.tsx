@@ -22,7 +22,8 @@ const ChatPage: React.FC = () => {
 
   const handleSendMessage = (content: string) => {
     console.log('Sending message:', content);
-    // WebSocket 구현 시 여기에 메시지 전송 로직 추가
+    // WebSocket으로 메시지 전송하므로 여기서는 로그만 출력
+    console.log('Message sent via WebSocket:', content);
   };
 
   // 채팅방 정보 가져오기
@@ -130,7 +131,7 @@ const ChatRoomWithData: React.FC<ChatRoomWithDataProps> = ({
 
   if (loading) return <div>메시지를 불러오는 중...</div>;
   if (error) return <div>메시지 로드 중 오류가 발생했습니다: {error}</div>;
-  
+
   return (
     <ChatRoom 
       messages={messages}
