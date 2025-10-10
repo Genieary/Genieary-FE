@@ -12,7 +12,11 @@ import CalendarPage from './pages/CalendarPage';
 import RecommendPage from './pages/RecommandPage';
 import RecommandResultTemplate from './pages/RecommandResultTemplate';
 import ChatPage from './pages/ChatPage';
+
 import MyPage from './pages/MyPage';
+
+import OnboardingProfilePage from "./pages/OnboardingProfilePage";
+import OnboardingInterestsPage from "./pages/OnboardingInterestsPage";
 
 function App() {
   const isLoggedIn = !!localStorage.getItem("token");
@@ -37,6 +41,9 @@ function App() {
         <Route path="/mypage/*"
           element={isLoggedIn ? <MyPage /> : <MyPage/>}/>
           {/* <Navigate to="/login" /> */}
+        <Route path="/onboarding/profile" element={<OnboardingProfilePage />} />
+        <Route path="/onboarding/interests" element={<OnboardingInterestsPage />} />
+        <Route path="/onboarding" element={<Navigate to="/onboarding/profile" replace />} />
       </Routes>
     </BrowserRouter>
   );
