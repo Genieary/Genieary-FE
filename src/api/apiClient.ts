@@ -25,8 +25,12 @@ export class ApiClient {
     try {
       const url = `${this.baseURL}/${endpoint.replace(/^\//, '')}`;
       
-      const defaultHeaders = {
+      // ✅ 로그인 토큰 가져오기
+      const token = localStorage.getItem('accessToken');
+
+      const defaultHeaders: HeadersInit = {
         'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}), // ✅ 자동으로 헤더에 토큰 포함
       };
 
       const config: RequestInit = {
@@ -38,15 +42,24 @@ export class ApiClient {
       };
 
       const response = await fetch(url, config);
-      const data = await response.json();
 
+      // ✅ 응답이 비어있을 수도 있으니 안전하게 처리
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
+
+      // ❌ 에러 응답 처리
       if (!response.ok) {
         return {
-          error: data.message || `HTTP error! status: ${response.status}`,
+          error: data?.message || `HTTP error! status: ${response.status}`,
           status: response.status,
         };
       }
 
+      // ✅ 성공 응답
       return {
         data,
         status: response.status,
