@@ -1,36 +1,152 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate, useParams } from 'react-router-dom';
 
-const FriendProfileContent = () => {
+const API_BASE = process.env.REACT_APP_API_BASE_URL || '';
+
+type GiftPreviewDto = {
+  giftId: number;
+  name: string;
+  imageUrl?: string | null;
+};
+
+type FriendProfile = {
+  friendId: number;
+  nickname: string;
+  email: string;
+  profileImage?: string | null; // presigned URL
+  giftLikes?: GiftPreviewDto[];
+};
+
+type FriendGift = {
+  id: number;
+  name: string;
+  imageUrl?: string | null;
+  description?: string | null;
+  updatedAt?: string | null;
+};
+
+type MaybeWrapped<T> = { result?: T; data?: T } | T;
+const unwrap = <T,>(payload: MaybeWrapped<T>): T =>
+  ((payload as any)?.result ?? (payload as any)?.data ?? payload) as T;
+
+const FriendProfileContent: React.FC = () => {
   const navigate = useNavigate();
-  const { friendId } = useParams();
+
+  const params = useParams();
+  const friendIdParam = (params.friendId ?? params.id) as string | undefined;
+
+  const [profile, setProfile] = useState<FriendProfile | null>(null);
+  const [gifts, setGifts] = useState<FriendGift[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
+
+  const headerName = useMemo(() => {
+    if (profile?.nickname) return profile.nickname;
+    if (friendIdParam) return `user #${friendIdParam}`;
+    return '친구';
+  }, [profile?.nickname, friendIdParam]);
+
+  useEffect(() => {
+    if (!friendIdParam) {
+      setErr('잘못된 친구 정보입니다. (URL 파라미터 없음)');
+      setLoading(false);
+      return;
+    }
+
+    const token = localStorage.getItem('accessToken');
+    const headers: HeadersInit = {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        // 1) 친구 프로필 (닉네임/이미지/미리보기 좋아요) 우선 로드
+        const profRes = await fetch(`${API_BASE}/friend/${friendIdParam}`, { headers });
+        if (!profRes.ok) {
+          const msg = `프로필 응답 오류 (HTTP ${profRes.status})`;
+          throw new Error(msg);
+        }
+        const profBody = unwrap<FriendProfile>(await profRes.json());
+        if (cancelled) return;
+
+        setProfile(profBody);
+
+        // 프로필의 giftLikes를 먼저 화면에 보여주기
+        const initial = (profBody.giftLikes ?? []).map<FriendGift>((g) => ({
+          id: g.giftId,
+          name: g.name,
+          imageUrl: g.imageUrl ?? null,
+        }));
+        setGifts(initial);
+
+        // 2) 공개 좋아요 목록이 따로 있으면 덮어쓰기 (성공 시)
+        try {
+          const recRes = await fetch(`${API_BASE}/friend/${friendIdParam}/recommendations`, { headers });
+          if (recRes.ok) {
+            const recBody = unwrap<any[]>(await recRes.json());
+            if (!cancelled && Array.isArray(recBody)) {
+              const mapped = recBody.map<FriendGift>((r: any) => ({
+                // recommendId나 giftId 어떤 키가 오든 id로 정규화
+                id: r.recommendId ?? r.giftId ?? r.id,
+                name: r.name ?? r.contentName ?? '이름 없음',
+                imageUrl: r.imageUrl ?? r.contentImage ?? null,
+                
+              }));
+              setGifts(mapped);
+            }
+          }
+        } catch {
+        }
+
+        setErr(null);
+      } catch (e: any) {
+        setErr(e?.message || '목록을 불러오지 못했습니다.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [friendIdParam]);
 
   return (
     <ListWrapper>
       <Section>
         <SectionHeader>
-            <BackWrapper onClick={() => navigate('/friends')}>
-                <BackIcon />
-                <BackText>친구 목록</BackText>
-            </BackWrapper>
+          <BackWrapper onClick={() => navigate('/friends')}>
+            <BackIcon />
+            <BackText>친구 목록</BackText>
+          </BackWrapper>
         </SectionHeader>
 
         <ProfileBlock>
-            <Left>
-                <ProfileCircle />
-                <NameBlock>
-                <Name>{friendId}</Name>
-                <UserId>아이디</UserId>
-                </NameBlock>
-            </Left>
+          <Left>
+            {profile?.profileImage ? (
+              <ProfileImg
+                src={profile.profileImage}
+                alt={`${headerName} 프로필 이미지`}
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+            ) : (
+              <ProfileCircle />
+            )}
+            <NameBlock>
+              <Name>{profile?.nickname ?? `user #${friendIdParam}`}</Name>
+              <UserId>{profile?.email ?? ''}</UserId>
+            </NameBlock>
+          </Left>
 
-            <Right>
-                <LampIllustration />
-                <RecommendButton>
-                친구 맞춤 선물 추천 받으러가기
-                </RecommendButton>
-            </Right>
+          <Right>
+            <LampIllustration />
+            <RecommendButton onClick={() => navigate(`/recommend?target=${friendIdParam ?? ''}`)}>
+              친구 맞춤 선물 추천 받으러가기
+            </RecommendButton>
+          </Right>
         </ProfileBlock>
       </Section>
 
@@ -38,22 +154,32 @@ const FriendProfileContent = () => {
 
       <Section>
         <SectionTitle>친구의 선물 좋아요 리스트</SectionTitle>
-        <GiftList>
-        <GiftCardContainer>
-            <GiftImage src="/images/airpods.png" alt="에어팟" />
-            <GiftLabel>에어팟 4세대</GiftLabel>
-        </GiftCardContainer>
 
-        <GiftCardContainer>
-            <GiftImage src="/images/plane.png" alt="비행기" />
-            <GiftLabel>비행기</GiftLabel>
-        </GiftCardContainer>
+        {loading && <SmallText>불러오는 중…</SmallText>}
+        {!loading && err && <SmallText style={{ color: '#E85C5A' }}>{err}</SmallText>}
 
-        <GiftCardContainer>
-            <GiftImage src="/images/freedom.png" alt="자유" />
-            <GiftLabel>자유</GiftLabel>
-        </GiftCardContainer>
-        </GiftList>
+        {!loading && !err && gifts.length === 0 && (
+          <SmallText>공개로 설정된 좋아요 선물이 없어요.</SmallText>
+        )}
+
+        {!loading && !err && gifts.length > 0 && (
+          <GiftList>
+            {gifts.map((g) => (
+              <GiftCardContainer key={g.id}>
+                <GiftImage
+                  src={g.imageUrl || '/images/placeholder.png'}
+                  alt={g.name}
+                  onError={(e) => {
+                    e.currentTarget.src = '/images/placeholder.png';
+                  }}
+                />
+                <GiftLabel>{g.name}</GiftLabel>
+                {g.updatedAt && <GiftMeta>{new Date(g.updatedAt).toLocaleString()}</GiftMeta>}
+                {g.description && <GiftDesc title={g.description}>{g.description}</GiftDesc>}
+              </GiftCardContainer>
+            ))}
+          </GiftList>
+        )}
       </Section>
     </ListWrapper>
   );
@@ -139,6 +265,12 @@ const SectionTitle = styled.h3`
   font-weight: 700;
 `;
 
+const SmallText = styled.div`
+  font-size: 14px;
+  color: #666;
+  margin-top: 8px;
+`;
+
 const GiftList = styled.div`
   display: flex;
   gap: 40px;
@@ -167,6 +299,21 @@ const GiftLabel = styled.div`
   color: #000;
   width: 100%;
   text-align: left;
+`;
+
+const GiftMeta = styled.div`
+  margin-top: 4px;
+  font-size: 12px;
+  color: #999;
+`;
+
+const GiftDesc = styled.div`
+  margin-top: 6px;
+  font-size: 13px;
+  color: #555;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 const BackWrapper = styled.button`
@@ -243,4 +390,12 @@ const Divider = styled.hr`
   border: none;
   height: 2px;
   background-color: #eee;
+`;
+
+const ProfileImg = styled.img`
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: #f0f0f0;
 `;

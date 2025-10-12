@@ -33,7 +33,7 @@ const FriendItem = ({
   onReject,
 }: FriendItemProps) => {
   const navigate = useNavigate();
-  const handleGiftClick = () => navigate(`/friend-profile/${name}`);
+  const handleGiftClick = () => navigate(`/friend/${id}`);
   const handleDelete = () => {
    if (id !== undefined) onDelete?.(id);
  };
