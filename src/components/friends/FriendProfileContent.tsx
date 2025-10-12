@@ -64,7 +64,10 @@ const FriendProfileContent: React.FC = () => {
     (async () => {
       try {
         // 1) 친구 프로필 (닉네임/이미지/미리보기 좋아요) 우선 로드
-        const profRes = await fetch(`${API_BASE}/friend/${friendIdParam}`, { headers });
+        let profRes = await fetch(`${API_BASE}/friend/${friendIdParam}`, { headers });
+        if (!profRes.ok && (profRes.status === 403 || profRes.status === 404)) {
+          profRes = await fetch(`${API_BASE}/users/${friendIdParam}`, { headers });
+        }
         if (!profRes.ok) {
           const msg = `프로필 응답 오류 (HTTP ${profRes.status})`;
           throw new Error(msg);
@@ -84,7 +87,10 @@ const FriendProfileContent: React.FC = () => {
 
         // 2) 공개 좋아요 목록이 따로 있으면 덮어쓰기 (성공 시)
         try {
-          const recRes = await fetch(`${API_BASE}/friend/${friendIdParam}/recommendations`, { headers });
+          let recRes = await fetch(`${API_BASE}/friend/${friendIdParam}/recommendations?page=0&size=20`, { headers });
+          if (!recRes.ok && (recRes.status === 403 || recRes.status === 404)) {
+            recRes = await fetch(`${API_BASE}/users/${friendIdParam}/recommendations?page=0&size=20`, { headers });
+          }
           if (recRes.ok) {
             const recBody = unwrap<any[]>(await recRes.json());
             if (!cancelled && Array.isArray(recBody)) {
