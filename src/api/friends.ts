@@ -15,7 +15,7 @@ const api = ApiClient.getInstance();
 
 export async function getFriendList(): Promise<Friend[]> {
   const token = getAuthToken();
-  const res = await api.request<ApiEnvelope<Friend[]>>('api/friend', {
+  const res = await api.request<ApiEnvelope<Friend[]>>('friend', {
     method: 'GET',
     headers: { Authorization: token ? `Bearer ${token}` : '' },
   });
@@ -25,7 +25,7 @@ export async function getFriendList(): Promise<Friend[]> {
 
 export async function deleteFriend(friendUserId: number): Promise<void> {
   const token = getAuthToken();
-  const res = await api.request<ApiEnvelope<null>>(`api/friend/${friendUserId}`, {
+  const res = await api.request<ApiEnvelope<null>>(`friend/${friendUserId}`, {
     method: 'DELETE',
     headers: { Authorization: token ? `Bearer ${token}` : '' },
   });
@@ -53,7 +53,7 @@ export async function searchFriends(
   }).toString();
 
   const res = await api.request<ApiEnvelope<FriendSearchResult[]>>(
-    `api/friend/search?${qs}`,
+    `friend/search?${qs}`,
     {
       method: 'GET',
       headers: { Authorization: token ? `Bearer ${token}` : '' },
@@ -85,8 +85,8 @@ export async function getRecommendedFriends(params?: {
   if (params?.overlapMin) q.set('overlapMin', String(params.overlapMin));
 
   const path = q.toString()
-    ? `api/friend/recommendations?${q}`
-    : 'api/friend/recommendations';
+    ? `friend/recommendations?${q}`
+    : 'friend/recommendations';
 
   const res = await api.request<ApiEnvelope<RecommendedFriend[]>>(path, {
     method: 'GET',

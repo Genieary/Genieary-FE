@@ -21,7 +21,7 @@ const api = ApiClient.getInstance();
 
 export async function getFriendRequestBox(): Promise<FriendRequestBox> {
   const token = getAuthToken();
-  const res = await api.request<ApiEnvelope<FriendRequestBox>>('api/friend/request/box', {
+  const res = await api.request<ApiEnvelope<FriendRequestBox>>('friend/request/box', {
     method: 'GET',
     headers: { Authorization: token ? `Bearer ${token}` : '' },
   });
@@ -31,7 +31,7 @@ export async function getFriendRequestBox(): Promise<FriendRequestBox> {
 
 export async function approveRequest(requestId: number): Promise<void> {
   const token = getAuthToken();
-  const res = await api.request<ApiEnvelope<null>>('api/friend/request', {
+  const res = await api.request<ApiEnvelope<null>>('friend/request', {
     method: 'POST',
     headers: { Authorization: token ? `Bearer ${token}` : '' },
     body: JSON.stringify({ requestId, status: 'ACCEPTED' }),
@@ -42,7 +42,7 @@ export async function approveRequest(requestId: number): Promise<void> {
 
 export async function rejectRequest(requestId: number): Promise<void> {
   const token = getAuthToken();
-  const res = await api.request<ApiEnvelope<null>>('api/friend/request', {
+  const res = await api.request<ApiEnvelope<null>>('friend/request', {
     method: 'POST',
     headers: { Authorization: token ? `Bearer ${token}` : '' },
     body: JSON.stringify({ requestId, status: 'REJECTED' }),
@@ -54,7 +54,7 @@ export async function rejectRequest(requestId: number): Promise<void> {
 export const cancelSentRequest = async (requestId: number) => {
   const api = ApiClient.getInstance();
   const token = localStorage.getItem('accessToken');
-  const res = await api.request<any>(`api/friend/request/${requestId}`, {
+  const res = await api.request<any>(`friend/request/${requestId}`, {
     method: 'DELETE',
     headers: { Authorization: token ? `Bearer ${token}` : '' },
   });
@@ -65,7 +65,7 @@ export const cancelSentRequest = async (requestId: number) => {
 
 export async function sendFriendRequest(receiverId: number): Promise<void> {
   const token = getAuthToken();
-  const res = await api.request<ApiEnvelope<null>>('api/friend', {
+  const res = await api.request<ApiEnvelope<null>>('friend', {
     method: 'POST',
     headers: { Authorization: token ? `Bearer ${token}` : '' },
     body: JSON.stringify({ receiverId }),

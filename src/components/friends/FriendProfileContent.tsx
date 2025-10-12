@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate, useParams } from 'react-router-dom';
 
-const API_BASE = process.env.REACT_APP_API_BASE_URL || '';
+const API_BASE = process.env.REACT_APP_API_URL || '';
 
 type GiftPreviewDto = {
   giftId: number;
