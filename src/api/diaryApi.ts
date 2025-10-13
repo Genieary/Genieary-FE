@@ -40,6 +40,23 @@ export const getDiaryById = async (diaryId: number): Promise<DiaryResponse> => {
   const res = await axiosInstance.get(`/diary/${diaryId}`);
   return res.data.result;
 };
+// ✅ 날짜로 일기 조회 (GET /api/diary?date=YYYY-MM-DD)
+export const getDiaryByDate = async (date: string): Promise<DiaryResponse | null> => {
+  try {
+    console.log("📤 getDiaryByDate() 호출:", date);
+    const res = await api.get(`/diary`, { params: { date } });
+    console.log("✅ getDiaryByDate() 응답:", res.data);
+    return res.data.result;
+  } catch (err: any) {
+    if (err.response?.status === 404) {
+      console.log("❌ 해당 날짜에 일기가 없습니다.");
+      return null; // 없을 때는 null 리턴
+    }
+    console.error("❌ 일기 조회 실패:", err.response?.status, err.response?.data);
+    throw err;
+  }
+};
+
 
 // 일기 수정
 export const updateDiary = async (
@@ -49,6 +66,7 @@ export const updateDiary = async (
   const res = await axiosInstance.patch(`/diary/${diaryId}`, data);
   return res.data.result;
 };
+
 
 // 일기 삭제
 export const deleteDiary = async (diaryId: number): Promise<void> => {

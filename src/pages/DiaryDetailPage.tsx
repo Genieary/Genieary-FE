@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'; // useRef �
 import styled from 'styled-components';
 import Holidays from '../components/Sidebar/Holidays';
 import { dateKeyOf, useCalendar } from '../store/calendarStore';
-import { createDiary, getDiaryById, updateDiary, deleteDiary } from '../api/diaryApi';
+import { createDiary, getDiaryByDate, getDiaryById, updateDiary, deleteDiary } from '../api/diaryApi';
 
 
 
@@ -41,20 +41,32 @@ const DiaryDetailPage: React.FC<DiaryDetailPageProps> = ({ selectedDate, onBack 
   const gifts= getGifts(key);
   const [diaryId, setDiaryId] = useState<number | null>(null);
 
-  useEffect(() => {
-  const existingDiary = getDiary(key); // ✅ 날짜별로 저장된 일기 확인
-  if (existingDiary) {
-    console.log('📖 기존 일기 발견:', existingDiary);
-    setDiaryId(existingDiary.diaryId ?? null);
-    setDiaryContent(existingDiary.content);
-    setIsEditing(false);
-  } else {
-    console.log('🆕 새 일기 작성 모드');
-    setDiaryId(null);
-    setDiaryContent('');
-    setIsEditing(true);
-  }
-}, [key]);
+
+useEffect(() => {
+  const fetchDiary = async () => {
+    try {
+      const formattedDate = selectedDate.toISOString().split('T')[0];
+      const diary = await getDiaryByDate(formattedDate);
+
+      if (diary) {
+        console.log('📖 기존 일기 발견:', diary);
+        setDiaryId(diary.diaryId);
+        setDiaryContent(diary.content);
+        setDiary(key, diary);   // store에 반영
+        setIsEditing(false);
+      } else {
+        console.log('🆕 새 일기 작성 모드');
+        setDiaryId(null);
+        setDiaryContent('');
+        setIsEditing(true);
+      }
+    } catch (err) {
+      console.error('❌ 일기 조회 실패:', err);
+    }
+  };
+
+  fetchDiary();
+}, [selectedDate]);
 
 
   // 이 날짜의 이벤트
@@ -136,27 +148,19 @@ const handleDeleteDiary = async () => {
   }
 };
 
-  // const handleDeleteDiary = () => {
-  //   setDiary(key, '');
-  //   setDiaryContent('');
-  //   setIsEditing(true);
-  // };
+ 
   const handleStartEdit = () => setIsEditing(true);
 
-  // const handleCancelEdit = () => {
-  //   setDiaryContent(getDiary(key)?.content ?? '');
-  //   setIsEditing(false);
-  // };
 
 const handleCancelEdit = async () => {
   try {
-    if (!diaryId) {
-      // 아직 작성 안 한 일기면 그냥 비워둬
-      setDiaryContent('');
-    } else {
-      // 서버에서 최신 데이터 다시 불러오기
-      const diary = await getDiaryById(diaryId);
+    const formattedDate = selectedDate.toISOString().split('T')[0];
+    const diary = await getDiaryByDate(formattedDate);
+
+    if (diary) {
       setDiaryContent(diary.content);
+    } else {
+      setDiaryContent('');
     }
   } catch (err) {
     console.error('일기 취소 중 서버 데이터 복구 실패:', err);
@@ -164,6 +168,7 @@ const handleCancelEdit = async () => {
     setIsEditing(false);
   }
 };
+
   // 이벤트 추가 (IME 대응)
   const handleAddEvent = () => {
     const title = newEventTitle.trim();
