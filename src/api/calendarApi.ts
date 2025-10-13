@@ -26,3 +26,14 @@ export const getMonthlySummary = async (calendarId: number) => {
   const res = await api.get<ApiResponse<string>>(`/calendar/summary/${calendarId}`);
   return res.data.result; // ✅ 요약 문자열만 반환
 };
+// ✅ 내 캘린더 목록 조회
+// src/api/calendarApi.ts
+export const getCalendar = async (year: number, month: number) => {
+  console.log("📤 getCalendar() 호출:", year, month);
+  const res = await api.get<ApiResponse<any>>(`/calendar`, {
+    params: { year, month },
+  });
+  return res.data.result;
+};
+
+

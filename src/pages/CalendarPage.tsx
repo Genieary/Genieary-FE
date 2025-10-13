@@ -7,7 +7,7 @@ import Summary from '../components/Sidebar/Summary';
 import DiaryDetailPage from './DiaryDetailPage';
 import { CalendarProvider, useCalendar } from '../store/calendarStore';
 import { getSchedulesByDate, getMonthlyEvents } from '../api/scheduleApi';
-import { getMonthlySummary } from '../api/calendarApi';
+import { getCalendar, getMonthlySummary } from '../api/calendarApi';
 
 const CalendarPageInner = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -20,7 +20,7 @@ const CalendarPageInner = () => {
   const [loading, setLoading] = useState(true);
   const { groupEventsByDate } = useCalendar();
 
-  // ✅ month 단위로 API 호출 (이 달 이벤트 + 요약)
+  // ✅ 달 바뀔 때마다 일정 & 요약 불러오기
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -29,14 +29,28 @@ const CalendarPageInner = () => {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth() + 1;
 
-        // 1번 calendarId는 예시 (로그인 후 교체)
+        // ✅ 백엔드에서 해당 달의 캘린더 가져오기
+        console.log("📤 getCalendar 호출:", year, month);
+        const calendar = await getCalendar(year, month);
+        console.log("📘 getCalendar 응답:", calendar);
+
+        if (!calendar || !calendar.calendarId) {
+          console.warn('⚠️ 해당 달의 캘린더가 존재하지 않습니다.');
+          setSummaryText('요약을 불러오지 못했습니다.');
+          return;
+        }
+
+        const calendarId = calendar.calendarId;
+        console.log('📘 내 캘린더 ID:', calendarId);
+
+        // ✅ 이벤트 + 요약 동시 요청
         const [monthlyEvents, summary] = await Promise.all([
           getMonthlyEvents(year, month),
-          getMonthlySummary(1),
+          getMonthlySummary(calendarId),
         ]);
 
-        setSchedules(monthlyEvents);   // 월별 일정
-        setSummaryText(summary);       // 한 달 요약
+        setSchedules(monthlyEvents);
+        setSummaryText(summary);
       } catch (err) {
         console.error('캘린더 데이터 불러오기 실패:', err);
         setSummaryText('요약을 불러오지 못했습니다.');
