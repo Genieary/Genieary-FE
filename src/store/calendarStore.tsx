@@ -139,12 +139,12 @@ const initialState: State = {
 };
 
 /** ---------- Provider 구현 ---------- */
-export const CalendarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const CalendarProvider: React.FC<{ children: React.ReactNode, currentDate?: Date }> = ({ children, currentDate }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   /** ✅ Provider가 처음 마운트될 때 서버에서 일정 불러오기 */
   useEffect(() => {
-    const now = new Date();
+    const now = currentDate ?? new Date();
     const year = now.getFullYear();
     const month = now.getMonth() + 1;
 
@@ -198,7 +198,7 @@ dispatch({ type: 'SET_EVENTS', payload: unique });
     };
 
     loadEventsAndSchedules();
-  }, []);
+  }, [currentDate]);
   // 헬퍼 함수 추가
 const extractNumericId = (id: string): number | null => {
   const match = id.match(/(\d+)$/);

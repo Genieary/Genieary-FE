@@ -9,8 +9,14 @@ import { CalendarProvider, useCalendar } from '../store/calendarStore';
 import { getSchedulesByDate, getMonthlyEvents } from '../api/scheduleApi';
 import { getCalendar, getMonthlySummary } from '../api/calendarApi';
 
-const CalendarPageInner = () => {
-  const [currentDate, setCurrentDate] = useState(new Date());
+const CalendarPageInner = ({
+  currentDate,
+  setCurrentDate,
+}: {
+  currentDate: Date;
+  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
+}) => {
+  
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showDiaryDetail, setShowDiaryDetail] = useState(false);
 
@@ -18,7 +24,7 @@ const CalendarPageInner = () => {
   const [schedules, setSchedules] = useState<any[]>([]);
   const [summaryText, setSummaryText] = useState<string>('');
   const [loading, setLoading] = useState(true);
-  const { groupEventsByDate } = useCalendar();
+  const { groupEventsByDate, state } = useCalendar();
 
   // ✅ 달 바뀔 때마다 일정 & 요약 불러오기
   useEffect(() => {
@@ -63,7 +69,7 @@ const CalendarPageInner = () => {
   }, [currentDate]);
 
   // ✅ store에 그룹핑 로직 있으면 그대로 유지
-const eventsByDate = useMemo(() => groupEventsByDate(), [groupEventsByDate, schedules]);
+const eventsByDate = useMemo(() => groupEventsByDate(), [groupEventsByDate, state.events]);
 
 
   // ✅ 날짜 클릭 시 — 해당 날짜 일정 조회
@@ -122,11 +128,16 @@ const eventsByDate = useMemo(() => groupEventsByDate(), [groupEventsByDate, sche
   );
 };
 
-const CalendarPage = () => (
-  <CalendarProvider>
-    <CalendarPageInner />
+const CalendarPage = () => {
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  return(
+  <CalendarProvider currentDate={currentDate}>
+    <CalendarPageInner currentDate={currentDate}
+        setCurrentDate={setCurrentDate} />
   </CalendarProvider>
-);
+  );
+};
 
 export default CalendarPage;
 

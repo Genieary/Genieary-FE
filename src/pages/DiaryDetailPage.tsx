@@ -5,7 +5,7 @@ import styled from 'styled-components';
 import Holidays from '../components/Sidebar/Holidays';
 import { dateKeyOf, useCalendar } from '../store/calendarStore';
 import { createDiary, getDiaryByDate, getDiaryById, updateDiary, deleteDiary } from '../api/diaryApi';
-
+import type { EventItem } from '../store/calendarStore';
 
 interface DiaryDetailPageProps {
   selectedDate: Date;
@@ -17,7 +17,6 @@ const DiaryDetailPage: React.FC<DiaryDetailPageProps> = ({ selectedDate, onBack 
   const captureRef = useRef<HTMLDivElement>(null);
 
   const {
-    eventsByDate,
     addEvent,
     updateEvent,
     deleteEvent,
@@ -69,7 +68,14 @@ useEffect(() => {
 
 
   // 이 날짜의 이벤트
-  const dayEvents = useMemo(() => eventsByDate(key), [eventsByDate, key]);
+  
+const { eventsByDate, state } = useCalendar();
+const [dayEvents, setDayEvents] = useState<EventItem[]>([]);
+
+useEffect(() => {
+  setDayEvents(eventsByDate(key));
+}, [key, eventsByDate, state.events]); // 👈 state.events를 deps에 추가!
+
   // 공유하기 핸들러
 const handleShare = async () => {
   if (!captureRef.current) return;
@@ -219,7 +225,7 @@ const handleCancelEdit = async () => {
       },
       {
         id: 'g3',
-        title: '자유',
+        title: '진격의거인 포스터',
         imageUrl: '/images/freedom.png',
       },
     ]);
