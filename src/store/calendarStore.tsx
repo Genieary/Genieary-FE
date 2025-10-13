@@ -1,6 +1,7 @@
 // src/store/calendarStore.tsx
 import React, { createContext, useContext, useMemo, useReducer, useEffect } from 'react';
-import { getMonthlyEvents, getSchedulesByDate } from '../api/calendarApi'; // ✅ 일정도 추가
+import { getMonthlyEvents, getSchedulesByDate ,getCalendar} from '../api/calendarApi'; // ✅ 일정도 추가
+import { createSchedule, updateSchedule, deleteSchedule } from '../api/scheduleApi';
 
 /** ---------- 타입 정의 ---------- */
 export type Gift = {
@@ -106,10 +107,10 @@ const reducer = (s: State, a: Action): State => {
 /** ---------- 컨텍스트 타입 ---------- */
 type Ctx = {
   state: State;
-  addEvent: (date: string, title: string, color?: string) => string;
-  updateEvent: (id: string, patch: Partial<EventItem>) => void;
-  deleteEvent: (id: string) => void;
-  togglePinned: (id: string) => void;
+  addEvent: (date: string, title: string, color?: string) => Promise<void>;
+  updateEvent: (id: string, patch: Partial<EventItem>) => Promise<void>;
+  deleteEvent: (id: string) => Promise<void>;
+  togglePinned: (id: string) => Promise<void>;
   eventsByDate: (date: string) => EventItem[];
   groupEventsByDate: () => Record<string, EventItem[]>;
   pinnedForMonth: (d: Date) => EventItem[];
@@ -198,22 +199,114 @@ dispatch({ type: 'SET_EVENTS', payload: unique });
 
     loadEventsAndSchedules();
   }, []);
-  /** API (기존 그대로) */
+  // 헬퍼 함수 추가
+const extractNumericId = (id: string): number | null => {
+  const match = id.match(/(\d+)$/);
+  return match ? Number(match[1]) : null;
+};
+    /** ✅ API 구현 */
   const api = useMemo<Ctx>(() => ({
     state,
 
-    addEvent: (date, title, color) => {
-      const id = crypto.randomUUID?.() ?? String(Date.now() + Math.random());
-      dispatch({ type: 'ADD_EVENT', payload: { id, date, title, color } });
-      return id;
+    /** 일정 등록 */
+    addEvent: async (date, title, color) => {
+      try {
+    // ✅ 현재 년/월 구하기
+    const [year, month] = date.split('-').map(Number);
+
+    // ✅ 서버에서 calendarId 받아오기
+    const calendar = await getCalendar(year, month);
+    const calendarId = calendar?.calendarId;
+
+    if (!calendarId) {
+      console.error('❌ calendarId를 불러오지 못했습니다.');
+      return;
+    }
+
+    // ✅ 일정 등록 요청
+    const newEvent = await createSchedule({
+      calendarId,
+      name: title,
+      isEvent: false,
+      date, // ✅ 스웨거 상 그대로
+    });
+
+        dispatch({
+          type: 'ADD_EVENT',
+          payload: {
+            id: String(newEvent.scheduleId),
+            date,
+            title: newEvent.name ?? title,
+            color,
+            pinned: newEvent.isEvent,
+          },
+        });
+        console.log('✅ 일정 등록 완료:', newEvent);
+      } catch (err) {
+        console.error('❌ 일정 등록 실패:', err);
+      }
     },
-    updateEvent: (id, patch) => dispatch({ type: 'UPDATE_EVENT', payload: { id, patch } }),
-    deleteEvent: (id) => dispatch({ type: 'DELETE_EVENT', payload: { id } }),
-    togglePinned: (id) => {
-      const target = state.events.find(e => e.id === id);
-      if (!target) return;
-      dispatch({ type: 'UPDATE_EVENT', payload: { id, patch: { pinned: !target.pinned } } });
-    },
+
+    /** 일정 수정 */
+    updateEvent: async (id, patch) => {
+  const numericId = extractNumericId(id);
+  if (!numericId) {
+    console.warn('⚠️ 잘못된 ID 형식:', id);
+    return;
+  }
+
+  try {
+    await updateSchedule(numericId, {
+      name: patch.title,
+      isEvent: patch.pinned,
+      date: patch.date,
+    });
+    dispatch({ type: 'UPDATE_EVENT', payload: { id, patch } });
+    console.log('✅ 일정 수정 완료:', id);
+  } catch (err) {
+    console.error('❌ 일정 수정 실패:', err);
+  }
+},
+
+    /** 일정 삭제 */
+    deleteEvent: async (id) => {
+  const numericId = extractNumericId(id);
+  if (!numericId) {
+    console.warn('⚠️ 잘못된 ID 형식:', id);
+    return;
+  }
+
+  try {
+    await deleteSchedule(numericId);
+    dispatch({ type: 'DELETE_EVENT', payload: { id } });
+    console.log('🗑️ 일정 삭제 완료:', id);
+  } catch (err) {
+    console.error('❌ 일정 삭제 실패:', err);
+  }
+},
+
+    /** 이벤트 토글 (isEvent) */
+   togglePinned: async (id) => {
+  const numericId = extractNumericId(id);
+  if (!numericId) {
+    console.warn('⚠️ 잘못된 ID 형식:', id);
+    return;
+  }
+
+  const target = state.events.find(e => e.id === id);
+  if (!target) return;
+  const nextPinned = !target.pinned;
+
+  try {
+    await updateSchedule(numericId, { isEvent: nextPinned });
+    dispatch({ type: 'UPDATE_EVENT', payload: { id, patch: { pinned: nextPinned } } });
+    console.log('⭐ 이벤트 토글 완료:', id, nextPinned);
+  } catch (err) {
+    console.error('❌ 이벤트 토글 실패:', err);
+  }
+},
+
+    /** 필터링 유틸들 */
     eventsByDate: (date) => state.events.filter(e => e.date === date),
     groupEventsByDate: () =>
       state.events.reduce<Record<string, EventItem[]>>((acc, e) => {
@@ -225,6 +318,7 @@ dispatch({ type: 'SET_EVENTS', payload: unique });
       return state.events.filter(e => e.pinned && e.date.startsWith(mk));
     },
 
+    /** 일기, 사진, 선물 관련 (변경 없음) */
     setDiary: (date, diary) => {
       const fullDiary = { ...diary, diaryDate: date };
       dispatch({ type: 'SET_DIARY', payload: fullDiary });
@@ -242,6 +336,51 @@ dispatch({ type: 'SET_EVENTS', payload: unique });
 
   return <CalendarContext.Provider value={api}>{children}</CalendarContext.Provider>;
 };
+
+  /** API  */
+//   const api = useMemo<Ctx>(() => ({
+//     state,
+
+//     addEvent: (date, title, color) => {
+//       const id = crypto.randomUUID?.() ?? String(Date.now() + Math.random());
+//       dispatch({ type: 'ADD_EVENT', payload: { id, date, title, color } });
+//       return id;
+//     },
+//     updateEvent: (id, patch) => dispatch({ type: 'UPDATE_EVENT', payload: { id, patch } }),
+//     deleteEvent: (id) => dispatch({ type: 'DELETE_EVENT', payload: { id } }),
+//     togglePinned: (id) => {
+//       const target = state.events.find(e => e.id === id);
+//       if (!target) return;
+//       dispatch({ type: 'UPDATE_EVENT', payload: { id, patch: { pinned: !target.pinned } } });
+//     },
+//     eventsByDate: (date) => state.events.filter(e => e.date === date),
+//     groupEventsByDate: () =>
+//       state.events.reduce<Record<string, EventItem[]>>((acc, e) => {
+//         (acc[e.date] ??= []).push(e);
+//         return acc;
+//       }, {}),
+//     pinnedForMonth: (d) => {
+//       const mk = monthKeyOf(d);
+//       return state.events.filter(e => e.pinned && e.date.startsWith(mk));
+//     },
+
+//     setDiary: (date, diary) => {
+//       const fullDiary = { ...diary, diaryDate: date };
+//       dispatch({ type: 'SET_DIARY', payload: fullDiary });
+//     },
+//     getDiary: (date) => state.diaries[date],
+//     deleteDiary: (date) => dispatch({ type: 'DELETE_DIARY', payload: { date } }),
+
+//     setPhoto: (p) => dispatch({ type: 'SET_PHOTO', payload: p }),
+//     getPhoto: (date) => state.photoAnalyses[date],
+//     clearPhoto: (date) => dispatch({ type: 'CLEAR_PHOTO', payload: { date } }),
+
+//     setGifts: (date, gifts) => dispatch({ type: 'SET_GIFTS', payload: { date, gifts } }),
+//     getGifts: (date) => state.gifts[date],
+//   }), [state]);
+
+//   return <CalendarContext.Provider value={api}>{children}</CalendarContext.Provider>;
+// };
 
 /** ---------- Hook ---------- */
 export const useCalendar = () => {
