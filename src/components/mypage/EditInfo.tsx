@@ -45,6 +45,13 @@ const EditInfo = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    //이미지 타입 검증
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+      alert('JPEG 또는 PNG 형식의 이미지만 업로드 가능합니다.');
+      e.target.value = ''; // 파일 선택 초기화
+      return;
+    }
+
       setSelectedFile(file); // 저장 버튼 누를 때 업로드할 파일 저장
 
       const previewUrl = URL.createObjectURL(file); // 로컬 미리보기 URL 생성
@@ -110,7 +117,7 @@ const EditInfo = () => {
         />
         <HiddenFileInput
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png"
           ref={fileInputRef}
           onChange={handleImageChange}
         />
