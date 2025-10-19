@@ -20,3 +20,10 @@ export type FriendItem = {
   nickname: string;
   profileImage: string | null;
 };
+
+export interface ApiResponse<T> {
+  isSuccess: boolean;
+  code: string;
+  message: string;
+  result: T;
+}

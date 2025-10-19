@@ -1,5 +1,6 @@
 import styled from "styled-components";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { getPresignedUploadUrl, uploadFileToS3, getProfileImageUrl } from "../../api/s3Api"; 
 
 const keywords = [
   "계획적인", "활기있는", "차분한", "분석적인", "충동적인", "사교적인",
@@ -11,6 +12,7 @@ const keywords = [
 const EditInfo = () => {
   // ✅ 상태 관리
   const [profileImg, setProfileImg] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null); 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // 실제 저장된 닉네임
@@ -26,18 +28,29 @@ const EditInfo = () => {
     "공격적인",
   ]);
 
-  // 프로필 사진 업로드
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImg(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  useEffect(() => {
+    const fetchProfileImage = async () => {
+      try {
+        const url = await getProfileImageUrl();
+        if (url) setProfileImg(url);
+      } catch (err) {
+        console.error("프로필 이미지 조회 실패:", err);
+      }
+    };
+    fetchProfileImage();
+  }, []);
 
+  // 프로필 사진 업로드
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+      setSelectedFile(file); // 저장 버튼 누를 때 업로드할 파일 저장
+
+      const previewUrl = URL.createObjectURL(file); // 로컬 미리보기 URL 생성
+      setProfileImg(previewUrl);
+  };
+  
   // 키워드 선택/해제
   const handleKeywordClick = (keyword: string) => {
     if (selectedKeywords.includes(keyword)) {
@@ -52,9 +65,34 @@ const EditInfo = () => {
   };
 
   // ✅ 변경 사항 저장 버튼 클릭
-  const handleSave = () => {
-    setNickname(editedNickname); // 닉네임 반영
+  const handleSave = async () => {
+    try {
+    // 이미지 반영
+     if (selectedFile) {
+      const uploadInfo = await getPresignedUploadUrl(selectedFile.type);
+      if (!uploadInfo?.url) {
+        alert("S3 업로드 URL 발급 실패");
+        return;
+      }
+
+      await uploadFileToS3(uploadInfo.url, selectedFile);
+      const newProfileUrl = await getProfileImageUrl();
+
+      if (newProfileUrl) {
+        setProfileImg(newProfileUrl); // 실제 반영
+      }
+      setSelectedFile(null);
+    }
+
+    // 닉네임 반영
+    if (editedNickname.trim()) {
+      setNickname(editedNickname);
+    }
     alert("변경 사항이 저장되었습니다.");
+  } catch (err) {
+    console.error("❌ 변경 사항 저장 중 오류:", err);
+    alert("저장 중 오류가 발생했습니다.");
+  }
   };
 
   return (
