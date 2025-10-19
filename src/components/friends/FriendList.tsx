@@ -100,6 +100,7 @@ const FriendList = () => {
               key={f.friendId}
               id={f.friendId}
               name={f.nickname}
+              avatarUrl={f.profileImage ?? undefined} // 우선 친구목록의 profile url 만 연결
               showDeleteButton={isManaging}
               onDelete={handleDelete}
             />
