@@ -9,19 +9,31 @@ export class AuthApi {
     this.apiClient = ApiClient.getInstance();
   }
 
-  // 일반 로그인
   async normalLogin(credentials: LoginRequest) {
-    return await this.apiClient.request<LoginResponse>('api/auth/login', {
+    const res = await this.apiClient.request<LoginResponse>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify(credentials),
+      data: credentials,
     });
+
+    if (res.data?.accessToken) {
+      localStorage.setItem('accessToken', res.data.accessToken);
+      localStorage.setItem('refreshToken', res.data.refreshToken || '');
+    }
+
+    return res;
   }
 
-  // 카카오 로그인
   async kakaoLogin(kakaoData: KakaoLoginRequest) {
-    return await this.apiClient.request<LoginResponse>(`api/auth/kakao?code=${kakaoData.code}`, {
-      method: 'GET',
-    });
+    const res = await this.apiClient.request<LoginResponse>(
+      `/auth/kakao?code=${kakaoData.code}`,
+      { method: 'GET' }
+    );
+
+    if (res.data?.accessToken) {
+      localStorage.setItem('accessToken', res.data.accessToken);
+      localStorage.setItem('refreshToken', res.data.refreshToken || '');
+    }
+
+    return res;
   }
-  
 }
