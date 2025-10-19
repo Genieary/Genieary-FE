@@ -1,6 +1,5 @@
 // src/api/friendRequests.ts
 import { ApiClient } from './apiClient';
-import { getAuthToken } from '../utils/auth';
 
 export type ReceivedFriendRequest = {
   requestId: number; requesterId: number;
@@ -20,43 +19,34 @@ export type FriendRequestBox = {
 const api = ApiClient.getInstance();
 
 export async function getFriendRequestBox(): Promise<FriendRequestBox> {
-  const token = getAuthToken();
   const res = await api.request<ApiEnvelope<FriendRequestBox>>('friend/request/box', {
     method: 'GET',
-    headers: { Authorization: token ? `Bearer ${token}` : '' },
   });
   if ('error' in res) throw new Error(res.error);
   return res.data?.result ?? { received: [], sent: [] };
 }
 
 export async function approveRequest(requestId: number): Promise<void> {
-  const token = getAuthToken();
   const res = await api.request<ApiEnvelope<null>>('friend/request', {
     method: 'POST',
-    headers: { Authorization: token ? `Bearer ${token}` : '' },
-    body: JSON.stringify({ requestId, status: 'ACCEPTED' }),
+    data: JSON.stringify({ requestId, status: 'ACCEPTED' }),
   });
   if ('error' in res) throw new Error(res.error);
   if (!res.data?.isSuccess) throw new Error(res.data?.message || '승인 실패');
 }
 
 export async function rejectRequest(requestId: number): Promise<void> {
-  const token = getAuthToken();
   const res = await api.request<ApiEnvelope<null>>('friend/request', {
     method: 'POST',
-    headers: { Authorization: token ? `Bearer ${token}` : '' },
-    body: JSON.stringify({ requestId, status: 'REJECTED' }),
+    data: JSON.stringify({ requestId, status: 'REJECTED' }),
   });
   if ('error' in res) throw new Error(res.error);
   if (!res.data?.isSuccess) throw new Error(res.data?.message || '거절 실패');
 }
 
 export const cancelSentRequest = async (requestId: number) => {
-  const api = ApiClient.getInstance();
-  const token = localStorage.getItem('accessToken');
   const res = await api.request<any>(`friend/request/${requestId}`, {
     method: 'DELETE',
-    headers: { Authorization: token ? `Bearer ${token}` : '' },
   });
   if ('error' in res) throw new Error(res.error);
   if (!res.data?.isSuccess) throw new Error(res.data?.message || '취소 실패');
@@ -64,11 +54,9 @@ export const cancelSentRequest = async (requestId: number) => {
 };
 
 export async function sendFriendRequest(receiverId: number): Promise<void> {
-  const token = getAuthToken();
   const res = await api.request<ApiEnvelope<null>>('friend', {
     method: 'POST',
-    headers: { Authorization: token ? `Bearer ${token}` : '' },
-    body: JSON.stringify({ receiverId }),
+    data: JSON.stringify({ receiverId }),
   });
   if ('error' in res) throw new Error(res.error);
   if (!res.data?.isSuccess) throw new Error(res.data?.message || '요청 실패');

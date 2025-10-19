@@ -1,7 +1,5 @@
 // src/api/friends.ts
 import { ApiClient } from './apiClient';
-import { getAuthToken } from '../utils/auth';
-
 export type Friend = { friendId: number; nickname: string; profileImage?: string | null };
 
 type ApiEnvelope<T> = {
@@ -14,20 +12,16 @@ type ApiEnvelope<T> = {
 const api = ApiClient.getInstance();
 
 export async function getFriendList(): Promise<Friend[]> {
-  const token = getAuthToken();
   const res = await api.request<ApiEnvelope<Friend[]>>('friend', {
     method: 'GET',
-    headers: { Authorization: token ? `Bearer ${token}` : '' },
   });
   if ('error' in res) throw new Error(res.error);
   return res.data?.result ?? [];
 }
 
 export async function deleteFriend(friendUserId: number): Promise<void> {
-  const token = getAuthToken();
   const res = await api.request<ApiEnvelope<null>>(`friend/${friendUserId}`, {
     method: 'DELETE',
-    headers: { Authorization: token ? `Bearer ${token}` : '' },
   });
   if ('error' in res) throw new Error(res.error);
   if (!res.data?.isSuccess) throw new Error(res.data?.message || '삭제 실패');
@@ -45,7 +39,6 @@ export async function searchFriends(
   page = 0,
   size = 10
 ): Promise<FriendSearchResult[]> {
-  const token = getAuthToken();
   const qs = new URLSearchParams({
     nickname,
     page: String(page),
@@ -56,7 +49,6 @@ export async function searchFriends(
     `friend/search?${qs}`,
     {
       method: 'GET',
-      headers: { Authorization: token ? `Bearer ${token}` : '' },
     }
   );
 
@@ -78,7 +70,6 @@ export async function getRecommendedFriends(params?: {
   limit?: number;                // 최대 추천 수
   overlapMin?: number;           // overlap 기준 (기본 2)
 }): Promise<RecommendedFriend[]> {
-  const token = getAuthToken();
   const q = new URLSearchParams();
   if (params?.mode) q.set('mode', params.mode);
   if (params?.limit) q.set('limit', String(params.limit));
@@ -90,7 +81,6 @@ export async function getRecommendedFriends(params?: {
 
   const res = await api.request<ApiEnvelope<RecommendedFriend[]>>(path, {
     method: 'GET',
-    headers: { Authorization: token ? `Bearer ${token}` : '' },
   });
 
   if ('error' in res) throw new Error(res.error);
