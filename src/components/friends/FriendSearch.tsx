@@ -1,33 +1,56 @@
-import React, { useMemo, useState } from 'react';
+// src/components/friends/FriendSearch.tsx
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import FriendSearchItem from './FriendSearchItem';
+import { searchFriends, type FriendSearchResult } from '../../api/friends';
+import { sendFriendRequest } from '../../api/friendRequests';
 
-const MOCK_USERS = [
-  '고릴란 산', '고릴란 산책', '고릴란 산책러', '고릴란 산책러버',
-  '정원쨩', '권아림', '아리무', '도카쨩',
-];
 const PANEL_HEIGHT = 600;
 
 const FriendSearch = () => {
   const [keyword, setKeyword] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [results, setResults] = useState<FriendSearchResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const results = useMemo(() => {
-    const q = keyword.trim();
-    if (!q) return [];
-    return MOCK_USERS.filter(name => name.toLowerCase().includes(q.toLowerCase()));
-  }, [keyword]);
-
-  const onSubmit = (e?: React.FormEvent) => {
+  const onSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     setSubmitted(true);
+
+    const q = keyword.trim();
+    if (!q) {
+      setResults([]);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const list = await searchFriends(q);
+      setResults(list);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '검색 중 오류가 발생했습니다.';
+      setError(msg);
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const onAdd = (name: string) => {
-    alert(`'${name}'에게 친구 신청 보냄 (stub)`);
+  const onAdd = async (receiverId: number) => {
+    try {
+      await sendFriendRequest(receiverId);
+      alert('친구 요청을 보냈어요!');
+    } catch (err) {
+      console.error(err);
+      alert('친구 요청 중 오류가 발생했습니다.');
+    }
   };
 
-  const showEmpty = !submitted || (submitted && results.length === 0);
+  const showEmpty =
+    (!submitted && !loading) ||
+    (submitted && !loading && !error && results.length === 0);
 
   return (
     <Card>
@@ -47,12 +70,23 @@ const FriendSearch = () => {
         </SearchForm>
 
         <ResultsArea>
+          {loading && <Empty>검색 중...</Empty>}
+          {error && <Empty style={{ color: '#e85c5a' }}>{error}</Empty>}
+
           {showEmpty ? (
-            <Empty>검색어를 입력하고 엔터를 눌러주세요.</Empty>
+            <Empty>
+              {submitted ? '검색 결과가 없습니다.' : '검색어를 입력하고 엔터를 눌러주세요.'}
+            </Empty>
           ) : (
             <List>
-              {results.map((name) => (
-                <FriendSearchItem key={name} name={name} onAdd={onAdd} />
+              {results.map((u) => (
+                <FriendSearchItem
+                  key={u.friendId}
+                  name={u.nickname}
+                  // 필요하면 아바타 사용:
+                  // avatarUrl={u.profileImage ?? undefined}
+                  onAdd={(/*name*/) => onAdd(u.friendId)} 
+                />
               ))}
             </List>
           )}

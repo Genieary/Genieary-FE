@@ -36,6 +36,7 @@ function App() {
         <Route path="/friends" element={<FriendsPage />} />
         <Route path="/friends/requests" element={<FriendRequestPage />} />
         <Route path="/friend-profile/:friendId" element={<FriendProfilePage />} />
+        <Route path="/friend/:friendId" element={<FriendProfilePage />} />
         <Route path="/friends/chat/*" element={<ChatPage />} />
         <Route path="/friends/search" element={<FriendSearchPage />} />
         <Route path="/mypage/*"

@@ -18,42 +18,48 @@ export class ApiClient {
     return ApiClient.instance;
   }
 
-  async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<ApiResponse<T>> {
+  async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     try {
       const url = `${this.baseURL}/${endpoint.replace(/^\//, '')}`;
-      
-      const defaultHeaders = {
+
+      const token = localStorage.getItem('accessToken');
+
+      const defaultHeaders: HeadersInit = {
         'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       };
 
       const config: RequestInit = {
+        // 프런트가 쿠키를 쓸 일이 생기면 아래 주석 해제
+        // credentials: 'include',
         ...options,
         headers: {
           ...defaultHeaders,
-          ...options.headers,
+          ...(options.headers || {}),
         },
       };
 
-      const response = await fetch(url, config);
-      const data = await response.json();
+      const res = await fetch(url, config);
 
-      if (!response.ok) {
-        return {
-          error: data.message || `HTTP error! status: ${response.status}`,
-          status: response.status,
-        };
+      // 본문이 없을 수도 있으니 안전 파싱
+      let data: any = null;
+      const ct = res.headers.get('content-type') || '';
+      if (ct.includes('application/json')) {
+        data = await res.json();
       }
 
+      // 백엔드가 ApiResponse 래퍼를 줄 때 실패인 경우까지 에러로 매핑
+      if (!res.ok || (data && data.isSuccess === false)) {
+        const message =
+          (data && (data.message || data.error)) ||
+          `HTTP error! status: ${res.status}`;
+        return { error: message, status: res.status };
+      }
+
+      return { data, status: res.status };
+    } catch (e) {
       return {
-        data,
-        status: response.status,
-      };
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Unknown error occurred',
+        error: e instanceof Error ? e.message : 'Unknown error occurred',
         status: 500,
       };
     }

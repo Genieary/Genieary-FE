@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState, useCallback } from "react";
 import styled from "styled-components";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -110,14 +110,12 @@ const OnboardingInterestsPage: React.FC = () => {
     setOpenKey((prev) => (prev === key ? null : key));
   };
 
-  const toggleItem = (name: string) => {
-    setSelected((prev) => {
-      if (prev.includes(name)) return prev.filter((v) => v !== name);
-      if (prev.length >= MAX_SELECT) return prev; // 초과 금지
-      return [...prev, name];
-    });
-    if (errorMsg) setErrorMsg(null);
-  };
+  const toggleItem = useCallback((name: string) => {
+  setSelected(prev =>
+    prev.includes(name) ? prev.filter(v => v !== name) : [...prev, name]
+  );
+}, []);
+
 
   const handleNext = () => {
     if (selected.length === 0) {
@@ -133,14 +131,14 @@ const OnboardingInterestsPage: React.FC = () => {
   };
 
   const selectedChips = useMemo(
-    () =>
-      selected.map((s) => (
-        <SelChip key={s} onClick={() => toggleItem(s)} title="클릭하여 제거">
-          {s}
-        </SelChip>
-      )),
-    [selected]
-  );
+  () =>
+    selected.map((s) => (
+      <SelChip key={s} onClick={() => toggleItem(s)} title="클릭하여 제거">
+        {s}
+      </SelChip>
+    )),
+  [selected, toggleItem]
+);
 
   return (
     <Page>
