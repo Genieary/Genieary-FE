@@ -123,7 +123,7 @@ const FriendList = () => {
               key={u.userId}
               id={u.userId}
               name={u.nickname}
-              profileImg={u.profileImg ?? undefined}
+              avatarUrl={u.profileImage ?? undefined}
               showAddButton={!sentIds.has(u.userId) && sendingId !== u.userId}
               onAdd={handleAdd}
             />
