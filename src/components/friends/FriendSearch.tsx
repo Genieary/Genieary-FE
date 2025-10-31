@@ -83,8 +83,7 @@ const FriendSearch = () => {
                 <FriendSearchItem
                   key={u.friendId}
                   name={u.nickname}
-                  // 필요하면 아바타 사용:
-                  // avatarUrl={u.profileImage ?? undefined}
+                  avatarUrl={u.profileImage ?? undefined}
                   onAdd={(/*name*/) => onAdd(u.friendId)} 
                 />
               ))}
