@@ -59,7 +59,7 @@ export async function searchFriends(
 export type RecommendedFriend = {
   userId: number;
   nickname: string;
-  profileImg?: string | null;
+  profileImage?: string | null;
   totalOverlap: number;
   personalityOverlap: number;
   interestOverlap: number;

@@ -1,9 +1,25 @@
 // components/mypage/MyInfo.tsx
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { getProfileImageUrl } from "../../api/s3Api";
 
 const MyInfo = () => {
   const navigate = useNavigate();
+
+  const [profileImg, setProfileImg] = useState<string | null>(null);
+  useEffect(() => {
+    const fetchProfileImage = async () => {
+      try {
+        const url = await getProfileImageUrl();
+        if (url) setProfileImg(url);
+      } catch (err) {
+        console.error("프로필 이미지 조회 실패:", err);
+      }
+    };
+
+    fetchProfileImage();
+  }, []);
 
   return (
     <Card>
@@ -15,7 +31,7 @@ const MyInfo = () => {
       </Header>
 
       <Profile>
-        <ProfileImg />
+        <ProfileImg $img={profileImg}/>
         <InfoBlock>
           <Name>고양이</Name>
           <UserId>아이디</UserId>
@@ -93,10 +109,11 @@ const Profile = styled.div`
   margin-bottom: 30px;
 `;
 
-const ProfileImg = styled.div`
+const ProfileImg = styled.div<{ $img?: string | null }>`
   width: 150px;
   height: 150px;
-  background: #FFF3BF;
+  background: ${({ $img }) =>
+    $img ? `url(${$img}) center/cover no-repeat` : "#FFF3BF"};
   border-radius: 50%;
   margin-right: 20px;
 `;
