@@ -3,13 +3,23 @@ import styled from 'styled-components';
 
 type Props = {
   name: string;
+  profileImage?: string | null;
+  avatarUrl?: string | null; 
   onAdd?: (name: string) => void;
 };
 
-const FriendSearchItem = ({ name, onAdd }: Props) => {
+const FriendSearchItem = ({ name, avatarUrl, onAdd }: Props) => {
   return (
     <Row>
-      <Avatar />
+      {avatarUrl ? (
+        <Avatar
+          src={avatarUrl}
+          alt={name}
+          onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder-avatar.png'; }}
+        />
+      ) : (
+        <ProfileCircle />
+      )}
       <Content>
         <Name>{name}</Name>
       </Content>
@@ -33,11 +43,11 @@ const Row = styled.div`
   border-bottom: 1px solid #eee;
 `;
 
-const Avatar = styled.div`
+const Avatar = styled.img`
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: #fff3bf;
+  object-fit: cover;
   flex-shrink: 0;
 `;
 
@@ -80,3 +90,11 @@ const AddIcon = () => (
     />
   </svg>
 );
+
+const ProfileCircle = styled.div`
+  width: 44px;
+  height: 44px;
+  background-color: #fff3bf;
+  border-radius: 50%;
+  flex-shrink: 0;
+`;
