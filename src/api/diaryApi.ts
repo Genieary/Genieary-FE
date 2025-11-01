@@ -1,6 +1,8 @@
 // src/api/diaryApi.ts
 import axiosInstance from './axiosInstance';
 import api from './axiosInstance'; //임추
+import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 export interface DiaryRequest {
   content: string;
@@ -71,4 +73,32 @@ export const updateDiary = async (
 // 일기 삭제
 export const deleteDiary = async (diaryId: number): Promise<void> => {
   await axiosInstance.delete(`/diary/${diaryId}`);
+};
+
+export const getPresignedUploadUrl = async (date: string, contentType: string) => {
+  const token = localStorage.getItem("accessToken");
+  const res = await axios.post(
+    `${API_BASE_URL}/diary/${date}/diary-face`,
+    null,
+    {
+      params: { contentType },
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  return res.data.result;
+};
+
+export const getDiaryFaceUrl = async (diaryId: number) => {
+  const token = localStorage.getItem("accessToken");
+  const res = await axios.get(
+    `${API_BASE_URL}/diary/${diaryId}/diary-face-url`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  return res.data.result;
 };

@@ -9,7 +9,9 @@ import type { EventItem } from '../store/calendarStore';
 import { getRecommendGifts } from '../api/recommendApi';
 import { analyzeEmotionByFile } from '../api/analysisApi';
 import { formatDateForServer } from '../utils/dateUtils';
+import { getPresignedUploadUrl, getDiaryFaceUrl } from '../api/diaryApi'; // 새로 추가 예정
 
+// import {getDiaryFaceUrl}
 
 interface DiaryDetailPageProps {
   selectedDate: Date;
@@ -67,6 +69,18 @@ useEffect(() => {
         setDiaryContent(diary.content);
         setDiary(key, diary);   // store에 반영
         setIsEditing(false);
+
+        // ✅ 얼굴 사진 Presigned 다운로드 URL 불러오기
+        const face = await getDiaryFaceUrl(diary.diaryId);
+        if (face?.url) {
+          setPhoto({
+            date: key,
+            imageDataUrl: face.url,
+           summary: 'AI 분석 결과 없음',
+
+
+          });
+        }
       } else {
         console.log('🆕 새 일기 작성 모드');
         setDiaryId(null);
@@ -222,25 +236,35 @@ const handleCancelEdit = async () => {
   const analysis = getPhoto(key);
 const handleAnalyzeFromDataUrl = async (dataUrl: string) => {
   try {
+    // 1️⃣ DataURL → Blob 변환
     const res = await fetch(dataUrl);
     const blob = await res.blob();
-    const file = new File([blob], 'capture.png', { type: 'image/png' });
+    const file = new File([blob], 'capture.png', { type: blob.type });
+    // 2️⃣ S3 업로드용 Presigned URL 요청
+    const date = formatDateForServer(selectedDate);
+    const { url } = await getPresignedUploadUrl(date, blob.type); // ← 새 API 함수
+    console.log("📸 Presigned URL 발급됨:", url);
 
+    // 3️⃣ 해당 URL로 PUT 업로드
+    await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': blob.type },
+        body: blob,
+});
+  console.log("✅ S3 업로드 완료");
+  
+    // 4️⃣ AI 분석 요청
     const result = await analyzeEmotionByFile(file);
-    console.log('🎯 감정 분석 결과:', result);
 
-    // 응답 구조 해석
-    const summaryText = `현재 감정은 ${result.predicted_emotion}입니다. (${result.confidence.toFixed(1)}%)`;
-
-    // all_predictions를 그대로 stats로 넘김
-    const stats = result.all_predictions;
-
+    // 5️⃣ 상태 저장 (로컬)
     setPhoto({
       date: key,
       imageDataUrl: dataUrl,
-      summary: summaryText,
-      stats, // 👈 { happy: 7.16, neutral: 46.39, ... }
+      summary: `현재 감정은 ${result.predicted_emotion}입니다.`,
+      stats: result.all_predictions,
     });
+
+    console.log('✅ 사진 업로드 + 분석 완료');
   } catch (error) {
     console.error('❌ 감정 분석 실패:', error);
   }
