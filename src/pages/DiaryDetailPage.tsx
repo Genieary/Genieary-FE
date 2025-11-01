@@ -6,6 +6,10 @@ import Holidays from '../components/Sidebar/Holidays';
 import { dateKeyOf, useCalendar } from '../store/calendarStore';
 import { createDiary, getDiaryByDate, getDiaryById, updateDiary, deleteDiary } from '../api/diaryApi';
 import type { EventItem } from '../store/calendarStore';
+import { getRecommendGifts } from '../api/recommendApi';
+import { analyzeEmotionByFile } from '../api/analysisApi';
+import { formatDateForServer } from '../utils/dateUtils';
+
 
 interface DiaryDetailPageProps {
   selectedDate: Date;
@@ -39,11 +43,22 @@ const DiaryDetailPage: React.FC<DiaryDetailPageProps> = ({ selectedDate, onBack 
   const gifts= getGifts(key);
   const [diaryId, setDiaryId] = useState<number | null>(null);
 
+  // 영어 감정 → 한글 + 이모지 매핑
+const EMOTION_MAP: Record<string, { label: string; emoji: string }> = {
+  happy: { label: '행복', emoji: '😊' },
+  sad: { label: '슬픔', emoji: '😢' },
+  angry: { label: '분노', emoji: '😠' },
+  disgust: { label: '혐오', emoji: '🤢' },
+  fear: { label: '두려움', emoji: '😨' },
+  neutral: { label: '중립', emoji: '😐' },
+  surprise: { label: '놀람', emoji: '😲' },
+};
+
 
 useEffect(() => {
   const fetchDiary = async () => {
     try {
-      const formattedDate = selectedDate.toISOString().split('T')[0];
+      const formattedDate = formatDateForServer(selectedDate);
       const diary = await getDiaryByDate(formattedDate);
 
       if (diary) {
@@ -115,11 +130,12 @@ const handleShare = async () => {
   // };
   const handleSaveDiary = async () => {
   try {
-    const body = {
-      content: diaryContent,
-      isLiked: false,
-      diaryDate: selectedDate.toISOString().split('T')[0],
-    };
+    // 수정
+const body = {
+  content: diaryContent,
+  isLiked: false,
+  diaryDate: formatDateForServer(selectedDate),
+};
 
     // 새 일기 작성 or 수정
     if (!diaryId) {
@@ -159,7 +175,7 @@ const handleDeleteDiary = async () => {
 
 const handleCancelEdit = async () => {
   try {
-    const formattedDate = selectedDate.toISOString().split('T')[0];
+    const formattedDate = formatDateForServer(selectedDate);
     const diary = await getDiaryByDate(formattedDate);
 
     if (diary) {
@@ -204,33 +220,85 @@ const handleCancelEdit = async () => {
 
   // 사진 분석 (더미)
   const analysis = getPhoto(key);
-  const handleAnalyzeFromDataUrl = async (dataUrl: string) => {
-    const resultText = '오늘은 편안해 보이네요. 미소가 보입니다.';
-    const stats = { sunny: 68, cloudy: 22, rainy: 10 };
-    setPhoto({ date: key, imageDataUrl: dataUrl, summary: resultText, stats });
-  };
-  useEffect(() => {
-  // 더미 데이터는 한 번만 넣도록 (없을 때만)
-  if (!gifts || gifts.length === 0) {
-    setGifts(key, [
-      {
-        id: 'g1',
-        title: '에어팟 4세대',
-        imageUrl: '/images/airpods.png',
-      },
-      {
-        id: 'g2',
-        title: '비행기',
-        imageUrl: '/images/plane.png',
-      },
-      {
-        id: 'g3',
-        title: '진격의거인 포스터',
-        imageUrl: '/images/freedom.png',
-      },
-    ]);
+const handleAnalyzeFromDataUrl = async (dataUrl: string) => {
+  try {
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    const file = new File([blob], 'capture.png', { type: 'image/png' });
+
+    const result = await analyzeEmotionByFile(file);
+    console.log('🎯 감정 분석 결과:', result);
+
+    // 응답 구조 해석
+    const summaryText = `현재 감정은 ${result.predicted_emotion}입니다. (${result.confidence.toFixed(1)}%)`;
+
+    // all_predictions를 그대로 stats로 넘김
+    const stats = result.all_predictions;
+
+    setPhoto({
+      date: key,
+      imageDataUrl: dataUrl,
+      summary: summaryText,
+      stats, // 👈 { happy: 7.16, neutral: 46.39, ... }
+    });
+  } catch (error) {
+    console.error('❌ 감정 분석 실패:', error);
   }
-}, [key, gifts, setGifts]);
+};
+
+
+//   useEffect(() => {
+//   // 더미 데이터는 한 번만 넣도록 (없을 때만)
+//   if (!gifts || gifts.length === 0) {
+//     setGifts(key, [
+//       {
+//         id: 'g1',
+//         title: '에어팟 4세대',
+//         imageUrl: '/images/airpods.png',
+//       },
+//       {
+//         id: 'g2',
+//         title: '비행기',
+//         imageUrl: '/images/plane.png',
+//       },
+//       {
+//         id: 'g3',
+//         title: '진격의거인 포스터',
+//         imageUrl: '/images/freedom.png',
+//       },
+//     ]);
+//   }
+// }, [key, gifts, setGifts]);
+useEffect(() => {
+  const fetchGifts = async () => {
+    try {
+      const formattedDate = formatDateForServer(selectedDate);
+      const data = await getRecommendGifts(formattedDate);
+
+      console.log('🎁 추천 선물 목록:', data);
+
+      if (!data || data.length === 0) {
+        console.log('📭 아직 추천받은 선물이 없습니다.');
+        // 추천이 없는 날엔 store를 건드리지 않음 → 기존 SmallText 문구 그대로 노출
+        return;
+      }
+
+      // 응답 데이터를 Gift 구조에 맞게 매핑
+      const mapped = data.map((item: any) => ({
+        id: item.recommendId,
+        title: item.name,
+        imageUrl: item.imageUrl,
+      }));
+
+      setGifts(key, mapped);
+    } catch (err) {
+      console.error('❌ 추천 선물 불러오기 실패:', err);
+    }
+  };
+
+  fetchGifts();
+}, [key, selectedDate, setGifts]);
+
   return (
     <Wrapper>
       <Sidebar>
@@ -282,11 +350,22 @@ const handleCancelEdit = async () => {
               <div>
                 <b>사진 분석 결과:</b>
                 <p>{analysis.summary}</p>
-                {analysis.stats && (
-                  <small>
-                    행복 {analysis.stats.sunny}%, 즐거움 {analysis.stats.cloudy}%, 걱정 {analysis.stats.rainy}%
-                  </small>
-                )}
+               {analysis.stats && (
+  <StatsBox>
+   {Object.entries(analysis.stats).map(([emotion, value]) => {
+  const mapped = EMOTION_MAP[emotion];
+  if (!mapped) return null; // 혹시 정의되지 않은 감정일 경우 skip
+
+  return (
+    <EmotionTag key={emotion}>
+      <span>{mapped.emoji}</span> {mapped.label} {value.toFixed(1)}%
+    </EmotionTag>
+  );
+})}
+
+  </StatsBox>
+)}
+
                 <div style={{ marginTop: 8 }}>
                   <GhostButton onClick={() => clearPhoto(key)}>삭제하기</GhostButton>
                 </div>
@@ -831,4 +910,27 @@ const GiftTitle = styled.div`
   color: #000;
   width: 100%;
   text-align: left;
+`;
+const StatsBox = styled.div`
+  margin-top: 8px;
+  font-size: 13px;
+  color: #555;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  & > div {
+    background: #f1f3f5;
+    padding: 4px 8px;
+    border-radius: 8px;
+  }
+`;
+const EmotionTag = styled.div`
+  background: #f1f3f5;
+  padding: 6px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  color: #333;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 `;

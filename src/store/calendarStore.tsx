@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useMemo, useReducer, useEffect } from 'react';
 import { getMonthlyEvents, getSchedulesByDate ,getCalendar} from '../api/calendarApi'; // ✅ 일정도 추가
 import { createSchedule, updateSchedule, deleteSchedule } from '../api/scheduleApi';
+import { formatDateForServer } from '../utils/dateUtils';
 
 /** ---------- 타입 정의 ---------- */
 export type Gift = {
@@ -166,8 +167,9 @@ export const CalendarProvider: React.FC<{ children: React.ReactNode, currentDate
         const allSchedules: any[] = [];
         for (let day = 1; day <= daysInMonth; day++) {
           const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const formattedDate = formatDateForServer(new Date(dateStr));
           try {
-            const schedules = await getSchedulesByDate(dateStr);
+            const schedules = await getSchedulesByDate(formattedDate);
             if (schedules && schedules.length > 0) {
               schedules.forEach((s: any) =>
                 allSchedules.push({
@@ -222,20 +224,21 @@ const extractNumericId = (id: string): number | null => {
       console.error('❌ calendarId를 불러오지 못했습니다.');
       return;
     }
+    const formattedDate = formatDateForServer(new Date(date));
 
     // ✅ 일정 등록 요청
     const newEvent = await createSchedule({
       calendarId,
       name: title,
       isEvent: false,
-      date, // ✅ 스웨거 상 그대로
+      date: formattedDate, // ✅ 스웨거 상 그대로
     });
 
         dispatch({
           type: 'ADD_EVENT',
           payload: {
             id: String(newEvent.scheduleId),
-            date,
+            date: formattedDate,
             title: newEvent.name ?? title,
             color,
             pinned: newEvent.isEvent,
@@ -257,10 +260,11 @@ const extractNumericId = (id: string): number | null => {
 
   try {
     await updateSchedule(numericId, {
-      name: patch.title,
-      isEvent: patch.pinned,
-      date: patch.date,
-    });
+  name: patch.title,
+  isEvent: patch.pinned,
+  date: patch.date ? formatDateForServer(new Date(patch.date)) : undefined,
+});
+
     dispatch({ type: 'UPDATE_EVENT', payload: { id, patch } });
     console.log('✅ 일정 수정 완료:', id);
   } catch (err) {
