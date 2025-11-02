@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import HeartDefaultIcon from "../../assets/heart-default.svg";
 import HeartLikedIcon from "../../assets/heart-liked.svg";
 import BrokenHeartDefaultIcon from "../../assets/broken-heart-default.svg";
@@ -11,11 +13,13 @@ export interface ResultItem {
   img: string;
 }
 
-type LikeStatus = 'liked' | 'disliked' | 'none';
+type LikeStatus = "liked" | "disliked" | "none";
+
+const API_BASE = process.env.REACT_APP_API_BASE_URL || "http://localhost:8080/api";
 
 const ResultGridContainer = styled.div`
   margin-left: -70px;
-  margin-bottom:40px;
+  margin-bottom: 40px;
   width: 1024px;
   height: 360px;
   display: grid;
@@ -23,7 +27,7 @@ const ResultGridContainer = styled.div`
   gap: 38px;
   background: #fff;
   border-radius: 18px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   padding: 32px;
   align-items: end;
   justify-items: center;
@@ -40,7 +44,7 @@ const CardWrapper = styled.div`
 const ResultCard = styled.div`
   background: #f8f9fa;
   border-radius: 13px;
-  padding:80px 18px 20px 18px;
+  padding: 80px 18px 20px 18px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -85,6 +89,10 @@ const IconButton = styled.button`
 const IconImage = styled.img`
   width: 28px;
   height: 28px;
+  transition: transform 0.15s ease;
+  &:active {
+    transform: scale(1.2);
+  }
 `;
 
 interface Props {
@@ -94,26 +102,68 @@ interface Props {
 const RecommandResultGrid: React.FC<Props> = ({ resultData }) => {
   const [likeStatus, setLikeStatus] = useState<Record<string, LikeStatus>>({});
 
-  const handleLike = (id: string) => {
-    setLikeStatus(prev => ({
-      ...prev,
-      [id]: prev[id] === 'liked' ? 'none' : 'liked',
-    }));
+  const token = localStorage.getItem("accessToken");
+
+  const handleLike = async (id: string) => {
+    const status = likeStatus[id] || "none";
+
+    if (status === "disliked") {
+      toast.warning("싫어요를 먼저 취소해야 좋아요를 누를 수 있어요.", { autoClose: 1800 });
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/recommend/${id}/like`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("like 요청 실패");
+
+      const newStatus = status === "liked" ? "none" : "liked";
+      setLikeStatus((prev) => ({ ...prev, [id]: newStatus }));
+
+      toast.success(
+        newStatus === "liked" ? "좋아요가 저장되었습니다." : "좋아요가 취소되었습니다.",
+        { autoClose: 1500 }
+      );
+    } catch {
+      toast.error("좋아요 처리 중 오류가 발생했습니다.", { autoClose: 1500 });
+    }
   };
 
-  const handleDislike = (id: string) => {
-    setLikeStatus(prev => ({
-      ...prev,
-      [id]: prev[id] === 'disliked' ? 'none' : 'disliked',
-    }));
+  const handleDislike = async (id: string) => {
+    const status = likeStatus[id] || "none";
+
+    if (status === "liked") {
+      toast.warning("좋아요를 먼저 취소해야 싫어요를 누를 수 있어요.", { autoClose: 1800 });
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/recommend/${id}/dislike`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("dislike 요청 실패");
+
+      const newStatus = status === "disliked" ? "none" : "disliked";
+      setLikeStatus((prev) => ({ ...prev, [id]: newStatus }));
+
+      toast.success(
+        newStatus === "disliked" ? "싫어요가 저장되었습니다." : "싫어요가 취소되었습니다.",
+        { autoClose: 1500 }
+      );
+    } catch {
+      toast.error("싫어요 처리 중 오류가 발생했습니다.", { autoClose: 1500 });
+    }
   };
 
   return (
     <ResultGridContainer>
       {resultData.map((item) => {
-        const status = likeStatus[item.id] || 'none';
-        const isLiked = status === 'liked';
-        const isDisliked = status === 'disliked';
+        const status = likeStatus[item.id] || "none";
+        const isLiked = status === "liked";
+        const isDisliked = status === "disliked";
 
         return (
           <CardWrapper key={item.id}>
@@ -127,7 +177,10 @@ const RecommandResultGrid: React.FC<Props> = ({ resultData }) => {
                   <IconImage src={isLiked ? HeartLikedIcon : HeartDefaultIcon} alt="좋아요" />
                 </IconButton>
                 <IconButton onClick={() => handleDislike(item.id)}>
-                  <IconImage src={isDisliked ? BrokenHeartDislikedIcon : BrokenHeartDefaultIcon} alt="싫어요" />
+                  <IconImage
+                    src={isDisliked ? BrokenHeartDislikedIcon : BrokenHeartDefaultIcon}
+                    alt="싫어요"
+                  />
                 </IconButton>
               </LikeRow>
             </InfoRow>
@@ -137,5 +190,6 @@ const RecommandResultGrid: React.FC<Props> = ({ resultData }) => {
     </ResultGridContainer>
   );
 };
+
 
 export default RecommandResultGrid;
