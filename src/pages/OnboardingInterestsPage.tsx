@@ -1,125 +1,65 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState, useCallback,useEffect } from "react";
 import styled from "styled-components";
 import { useNavigate, useLocation } from "react-router-dom";
-
-type CategoryKey =
-  | "푸드·드링크"
-  | "실내 활동"
-  | "자기계발"
-  | "재테크"
-  | "액티비티"
-  | "문화·예술"
-  | "소셜게임"
-  | "여행·나들이";
-
-const CATEGORIES: { key: CategoryKey; label: string; items: string[] }[] = [
-  {
-    key: "푸드·드링크",
-    label: "푸드·드링크",
-    items: ["맛집 투어", "요리", "주류", "베이킹", "디저트", "커피", "파인다이닝", "티"],
-  },
-  {
-    key: "실내 활동",
-    label: "실내 활동",
-    items: [
-      "사진",
-      "드로잉",
-      "댄스",
-      "공예",
-      "노래",
-      "악기 연주",
-      "글쓰기",
-      "봉사",
-      "음악 감상",
-      "향수",
-      "뷰티",
-      "쇼핑",
-      "영상",
-      "캘리그라피",
-      "만화",
-    ],
-  },
-  {
-    key: "자기계발",
-    label: "자기계발",
-    items: ["독서", "스터디", "스피치", "커리어", "브랜딩", "창작", "외국어"],
-  },
-  {
-    key: "재테크",
-    label: "재테크",
-    items: ["투자금융", "부동산", "창업", "주식", "경제", "블로그", "SNS"],
-  },
-  {
-    key: "액티비티",
-    label: "액티비티",
-    items: [
-      "등산",
-      "야구",
-      "산책",
-      "스포츠관람",
-      "러닝",
-      "클라이밍",
-      "요가",
-      "다이어트",
-      "헬스",
-      "테니스",
-      "배드민턴",
-      "자전거",
-      "풋살",
-      "볼링",
-      "농구",
-      "필라테스",
-      "골프",
-      "수영",
-      "축구",
-      "스케이트보드",
-      "수상스포츠",
-    ],
-  },
-  {
-    key: "소셜게임",
-    label: "소셜게임",
-    items: ["보드게임", "컨셉게임", "추리게임", "방탈출", "온라인게임"],
-  },
-  {
-    key: "문화·예술",
-    label: "문화·예술",
-    items: ["전시", "영화", "페스티벌", "연극", "뮤지컬", "공연", "콘서트", "연주회", "팝업"],
-  },
-  {
-    key: "여행·나들이",
-    label: "여행·나들이",
-    items: ["국내 여행", "피크닉", "해외 여행", "캠핑", "드라이브", "놀이공원"],
-  },
-];
+import { UserApi } from "../api/userApi"; 
+import { toast } from "react-toastify";
 
 const MAX_SELECT = 5;
 
 /* ===== 페이지 ===== */
 const OnboardingInterestsPage: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation(); // 1단계에서 넘긴 state 필요하면 사용
-  const [openKey, setOpenKey] = useState<CategoryKey | null>(null);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [categories, setCategories] = useState<Record<string, { id: number; name: string }[]>>({});
+  const [selected, setSelected] = useState<number[]>([]);
+  const [openKey, setOpenKey] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const errorRef = useRef<HTMLDivElement>(null);
 
   const isFull = selected.length >= MAX_SELECT;
+  
+  // 관심사 목록 불러오기
+  useEffect(() => {
+    const fetchInterests = async () => {
+      try {
+        const api = new UserApi();
+        const categoryData = await api.getInterests();
+        setCategories(categoryData);
+      } catch (err: any) {
+        console.error(err);
+        setErrorMsg("관심사 목록을 불러오지 못했습니다.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInterests();
+  }, []);
 
-  const toggleOpen = (key: CategoryKey) => {
+  const toggleOpen = (key: string) => {
     setOpenKey((prev) => (prev === key ? null : key));
   };
 
-  const toggleItem = (name: string) => {
-    setSelected((prev) => {
-      if (prev.includes(name)) return prev.filter((v) => v !== name);
-      if (prev.length >= MAX_SELECT) return prev; // 초과 금지
-      return [...prev, name];
-    });
-    if (errorMsg) setErrorMsg(null);
-  };
+  const toggleItem = useCallback((id: number) => {
+    setSelected((prev) =>
+      prev.includes(id)
+        ? prev.filter((v) => v !== id)
+        : prev.length < MAX_SELECT
+        ? [...prev, id]
+        : prev
+    );
+  }, []);
 
-  const handleNext = () => {
+  const selectedChips = useMemo(() => {
+    const allItems = Object.values(categories).flat();
+    const selectedItems = allItems.filter((item) => selected.includes(item.id));
+    return selectedItems.map((item) => (
+      <SelChip key={item.id} onClick={() => toggleItem(item.id)} title="클릭하여 제거">
+        {item.name}
+      </SelChip>
+    ));
+  }, [selected, categories, toggleItem]);
+
+  const handleNext = async () => {
     if (selected.length === 0) {
       setErrorMsg(`관심 항목을 최소 1개 선택해 주세요. (최대 ${MAX_SELECT}개)`);
       requestAnimationFrame(() => {
@@ -127,20 +67,23 @@ const OnboardingInterestsPage: React.FC = () => {
       });
       return;
     }
-    // TODO: 서버 전송 or 전역 저장
-    // 예시로 메인으로 이동
-    navigate("/");
-  };
 
-  const selectedChips = useMemo(
-    () =>
-      selected.map((s) => (
-        <SelChip key={s} onClick={() => toggleItem(s)} title="클릭하여 제거">
-          {s}
-        </SelChip>
-      )),
-    [selected]
-  );
+    try {
+      const api = new UserApi();
+      await api.createInterests({ interestIds: selected });
+      toast.success("관심사가 등록되었습니다!");
+      navigate("/"); 
+    } catch (err: any) {
+      setErrorMsg(err.message || "관심사 등록 중 오류가 발생했습니다.");
+    }
+  };
+  if (loading) {
+    return (
+      <Page>
+        <Title>관심사를 불러오는 중...</Title>
+      </Page>
+    );
+  }
 
   return (
     <Page>
@@ -153,28 +96,27 @@ const OnboardingInterestsPage: React.FC = () => {
         </SectionHead>
 
         <Accordions>
-          {CATEGORIES.map(({ key, label, items }) => {
+          {Object.entries(categories).map(([key, items]) => {
             const opened = openKey === key;
             return (
               <AccItem key={key}>
                 <AccHeader onClick={() => toggleOpen(key)} $opened={opened}>
-                  <span>{label}</span>
+                  <span>{key}</span>
                   <Caret $opened={opened} aria-hidden />
                 </AccHeader>
 
                 {opened && (
                   <AccBody>
                     <ChipsWrap>
-                      {items.map((name) => {
-                        const active = selected.includes(name);
+                      {items.map(({ id, name }) => {
+                        const active = selected.includes(id);
                         const disabled = !active && isFull;
                         return (
                           <Chip
-                            key={name}
+                            key={id}
                             $active={active}
                             $disabled={disabled}
-                            onClick={() => !disabled && toggleItem(name)}
-                            title={disabled ? `최대 ${MAX_SELECT}개까지 선택 가능합니다.` : ""}
+                            onClick={() => !disabled && toggleItem(id)}
                           >
                             {name}
                           </Chip>
@@ -187,7 +129,6 @@ const OnboardingInterestsPage: React.FC = () => {
             );
           })}
         </Accordions>
-
         <ChosenWrap>
           <ChosenTitle>선택된 항목:</ChosenTitle>
           <ChosenChips>{selected.length ? selectedChips : <Hint>아직 선택한 항목이 없어요</Hint>}</ChosenChips>

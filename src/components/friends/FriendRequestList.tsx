@@ -1,21 +1,71 @@
-import React, { useState } from 'react';
+// src/components/friends/FriendRequestList.tsx
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import FriendItem from './FriendItem';
-
-const sentRequests = ['정원쨩', '권아림', '아리무', '도카쨩'];
-const receivedRequests = ['가네키 켄'];
+import {
+  getFriendRequestBox,
+  approveRequest,
+  rejectRequest,
+  cancelSentRequest,
+  type FriendRequestBox
+} from '../../api/friendRequests';
 
 const FriendRequestList = () => {
   const [isManaging, setIsManaging] = useState(false);
+  const [received, setReceived] = useState<FriendRequestBox['received']>([]);
+  const [sent, setSent] = useState<FriendRequestBox['sent']>([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const box = await getFriendRequestBox();
+        setReceived(box.received);
+        setSent(box.sent);
+      } catch (e) {
+        console.error(e);
+        setReceived([]);
+        setSent([]);
+      }
+    })();
+  }, []);
+
   const toggleManage = () => setIsManaging(v => !v);
 
-  const onCancel = (name: string) => alert(`'${name}' 친구 신청 취소 (stub)`);
-  const onReject = (name: string) => alert(`'${name}' 친구 신청 거절 (stub)`);
-  const onAccept = (name: string) => alert(`'${name}' 친구 추가 (stub)`);
+  const onCancel = async (requestId: number) => {
+  try {
+    await cancelSentRequest(requestId);
+    setSent(prev => prev.filter(s => s.requestId !== requestId));
+  } catch (e) {
+    console.error(e);
+    alert('취소 중 오류가 발생했어요.');
+  }
+};
+
+  const onAccept = async (requestId: number) => {
+    try {
+      await approveRequest(requestId);
+      // 승인 성공 시 받은 요청 목록에서 제거
+      setReceived(prev => prev.filter(r => r.requestId !== requestId));
+      // 필요하면 친구 목록 리프레시 트리거를 추가하세요.
+    } catch (err) {
+      console.error(err);
+      alert('승인 중 오류가 발생했어요.');
+    }
+  };
+
+  const onReject = async (requestId: number) => {
+    try {
+      await rejectRequest(requestId);
+      // 거절 성공 시 받은 요청 목록에서 제거
+      setReceived(prev => prev.filter(r => r.requestId !== requestId));
+    } catch (err) {
+      console.error(err);
+      alert('거절 중 오류가 발생했어요.');
+    }
+  };
 
   return (
     <ListWrapper>
-      {/* 내가 보낸 친구 신청 */}
       <Section>
         <SectionHeader>
           <SectionTitle>내가 보낸 친구 신청</SectionTitle>
@@ -24,29 +74,40 @@ const FriendRequestList = () => {
           </ManageButton>
         </SectionHeader>
 
-        {sentRequests.map((name) => (
-          <FriendItem
-            key={name}
-            name={name}
-            showCancelButton={isManaging}
-            onCancel={onCancel}
-          />
-        ))}
+        {sent.length === 0 ? (
+          <Empty>보낸 친구 신청이 없어요.</Empty>
+        ) : (
+          sent.map(s => (
+            <FriendItem
+              key={s.requestId}
+              id={s.receiverId}
+              name={s.nickname}
+              avatarUrl={s.profileImage || undefined}
+              showCancelButton={isManaging}
+              onCancel={(_name) => onCancel(s.requestId)}
+            />
+          ))
+        )}
       </Section>
 
-      {/* 내가 받은 친구 신청 */}
       <Section>
         <SectionTitle>내가 받은 친구 신청</SectionTitle>
-        {receivedRequests.map((name) => (
-          <FriendItem
-            key={name}
-            name={name}
-            showAddButton
-            onAdd={onAccept}
-            showRejectButton={isManaging}
-            onReject={onReject}
-          />
-        ))}
+        {received.length === 0 ? (
+          <Empty>받은 친구 신청이 없어요.</Empty>
+        ) : (
+          received.map(r => (
+            <FriendItem
+              key={r.requestId}
+              id={r.requesterId}
+              name={r.nickname}
+              avatarUrl={r.profileImage || undefined}
+              showAddButton
+              onAdd={(_name) => onAccept(r.requestId)}
+              showRejectButton={isManaging}
+              onReject={(_name) => onReject(r.requestId)}
+            />
+          ))
+        )}
       </Section>
     </ListWrapper>
   );
@@ -95,4 +156,9 @@ const ManageButton = styled.button`
   transition: color 0.2s;
   text-decoration: underline;
   &:hover { color: #555; }
+`;
+
+const Empty = styled.div`
+  color: #999;
+  padding: 18px 0;
 `;

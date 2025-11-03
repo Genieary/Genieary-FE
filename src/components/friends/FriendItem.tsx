@@ -1,21 +1,28 @@
+// src/components/FriendItem.tsx
 import React from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 
 type FriendItemProps = {
+  id: number;
   name: string;
+  profileImg?: string | null;
+  profileImage?: string | null;
+  avatarUrl?: string | null; 
   showAddButton?: boolean;
   showDeleteButton?: boolean;
   showCancelButton?: boolean;
   showRejectButton?: boolean;
-  onDelete?: (name: string) => void;
-  onAdd?: (name: string) => void;
+  onDelete?: (id: number) => void;
+  onAdd?: (id: number) => void | Promise<void>;
   onCancel?: (name: string) => void;
   onReject?: (name: string) => void;
 };
 
 const FriendItem = ({
+  id,
   name,
+  avatarUrl,
   showAddButton = false,
   showDeleteButton = false,
   showCancelButton = false,
@@ -26,42 +33,47 @@ const FriendItem = ({
   onReject,
 }: FriendItemProps) => {
   const navigate = useNavigate();
-
-  const handleGiftClick = () => navigate(`/friend-profile/${name}`);
-  const handleDelete = () => onDelete?.(name);
-
+  const handleGiftClick = () => navigate(`/friend/${id}`);
+  const handleDelete = () => {
+   if (id !== undefined) onDelete?.(id);
+ };
   return (
     <ItemWrapper>
-      <ProfileCircle />
+      {avatarUrl ? (
+        <Avatar
+          src={avatarUrl}
+          alt={name}
+          onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder-avatar.png'; }}
+        />
+      ) : (
+        <ProfileCircle />
+      )}
+
       <ContentWrapper>
         <Name>{name}</Name>
       </ContentWrapper>
 
       <ButtonGroup>
         {showAddButton && (
-          <AddFriendButton onClick={() => onAdd?.(name)}>
+          <AddFriendButton onClick={() => onAdd?.(id)}>
             친구 추가 <AddFriendIcon />
           </AddFriendButton>
         )}
-
         {showCancelButton && (
           <DeleteButton onClick={() => onCancel?.(name)}>
             신청 취소 <DeleteIcon />
           </DeleteButton>
         )}
-
         {showRejectButton && (
           <DeleteButton onClick={() => onReject?.(name)}>
             거절 <DeleteIcon />
           </DeleteButton>
         )}
-
         {showDeleteButton && (
           <DeleteButton onClick={handleDelete}>
             친구 삭제 <DeleteIcon />
           </DeleteButton>
         )}
-
         <GiftButton onClick={handleGiftClick}>
           선물 프로필 <GiftIcon />
         </GiftButton>
@@ -85,6 +97,14 @@ const ProfileCircle = styled.div`
   height: 44px;
   background-color: #fff3bf;
   border-radius: 50%;
+  flex-shrink: 0;
+`;
+
+const Avatar = styled.img`
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
   flex-shrink: 0;
 `;
 
@@ -119,32 +139,16 @@ const GiftButton = styled.button`
   cursor: pointer;
 `;
 
-const AddFriendButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 6px;
+const AddFriendButton = styled(GiftButton)`
   background: #d2f9d9;
-  border: 1.5px solid #2b8a3e;
+  border-color: #2b8a3e;
   color: #2b8a3e;
-  padding: 4px 10px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
 `;
 
-const DeleteButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 6px;
+const DeleteButton = styled(GiftButton)`
   background: #f4f4f4;
-  border: 1.5px solid #9aa0a6;
+  border-color: #9aa0a6;
   color: #5f6368;
-  padding: 4px 10px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
 `;
 
 const GiftIcon = () => (

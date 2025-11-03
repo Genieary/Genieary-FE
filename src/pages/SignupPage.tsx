@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import CheckCircleFilled from "../components/Icons/CheckCircleFilled";
+import { AuthApi } from "../api/authApi";
 
 
 const SignupPage: React.FC = () => {
@@ -50,18 +51,10 @@ const SignupPage: React.FC = () => {
     }
 
     try {
-      // 실제 API/hook이 있으면 사용
-      if (typeof auth.checkEmail === "function") {
-        const ok: boolean = await auth.checkEmail(email.trim());
-        setEmailChecked(ok);
-        setEmailCheckMsg(ok ? "사용 가능한 이메일입니다." : "이미 사용 중인 이메일입니다.");
-      } else {
-        // 임시 스텁 로직: example.com 이면 중복으로 처리
-        await new Promise((r) => setTimeout(r, 400));
-        const ok = !/@example\.com$/i.test(email.trim());
-        setEmailChecked(ok);
-        setEmailCheckMsg(ok ? "사용 가능한 이메일입니다." : "이미 사용 중인 이메일입니다.");
-      }
+      const authApi = new AuthApi();
+      const ok = await authApi.checkEmail(email.trim());
+      setEmailChecked(ok);
+      setEmailCheckMsg(ok ? "사용 가능한 이메일입니다." : "이미 사용 중인 이메일입니다.");
     } catch (e) {
       setEmailChecked(false);
       setEmailCheckMsg("중복확인 중 오류가 발생했어요.");
@@ -79,20 +72,17 @@ const SignupPage: React.FC = () => {
     if (!agree) return setLocalError("이용약관 동의가 필요합니다.");
 
     try {
-      if (typeof auth.signup === "function") {
-        const ok: boolean = await auth.signup({ email: email.trim(), password });
-        if (!ok) throw new Error("회원가입 실패");
-      } else {
-        // 임시 스텁
-        await new Promise((r) => setTimeout(r, 500));
-      }
-      alert("회원가입이 완료되었습니다. 로그인 해주세요.");
+      const authApi = new AuthApi();
+      const result = await authApi.signup({
+        email: email.trim(),
+        password,
+        passwordCheck: password2,
+      });
       navigate("/login");
     } catch (err: any) {
       setLocalError(err?.message || "회원가입 중 오류가 발생했어요.");
     }
   };
-
   return (
     <Page>
       <Title>회원가입</Title>
@@ -132,6 +122,11 @@ const SignupPage: React.FC = () => {
               disabled={loading}
             />
           </Field>
+          {password !== "" && !pwRule.ok && (
+  <Hint $ok={false}>
+    비밀번호는 8자 이상이며, 영문과 숫자를 모두 포함해야 합니다.
+  </Hint>
+)}
 
           <Field>
             <Input

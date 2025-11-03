@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
+import { UserApi } from "../api/userApi";
+import { toast } from "react-toastify";
 
 const GENDER_OPTIONS = ["선택안함", "남자", "여자"] as const;
 const KEYWORDS = [
@@ -49,36 +51,73 @@ const OnboardingProfilePage: React.FC = () => {
   const allValid =
     nickname.trim().length > 0 &&
     birthdayValid &&
-    gender !== null && // '선택안함'도 선택이면 OK
+    gender !== null && 
     keywords.length > 0 &&
     keywords.length <= MAX_KEYWORDS;
 
-  const handleNext = () => {
+  
+  const handleNext = async () => {
     if (!allValid) {
       const missing: string[] = [];
       if (!nickname.trim()) missing.push("닉네임");
       if (!birthdayValid) missing.push("생일");
       if (gender === null) missing.push("성별");
       if (keywords.length === 0) missing.push("성격 키워드");
-      alert(
-        `다음 항목을 확인해 주세요:\n- ${missing.join(
-          "\n- "
-        )}\n(성격 키워드는 최대 ${MAX_KEYWORDS}개 선택)`
+      toast.error(
+        `다음 항목을 확인해 주세요:\n${missing.map((m) => `• ${m}`).join("\n")}\n(성격 키워드는 최대 ${MAX_KEYWORDS}개 선택)`,
+        { autoClose: 4000 }
       );
       return;
     }
+  
+    try {
+      const userApi = new UserApi();
+  
+      const birthDate = `${year.padStart(4, "0")}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
 
-    // 다음 단계로 이동 (취미/관심)
-    navigate("/onboarding/interests", {
-      state: {
-        profile: {
-          nickname: nickname.trim(),
-          birthday: { year, month, day },
-          gender,
-          keywords,
-        },
-      },
-    });
+      let genderValue: "MALE" | "FEMALE" | "OTHER" = "OTHER";
+      if (gender === "남자") genderValue = "MALE";
+      if (gender === "여자") genderValue = "FEMALE";
+  
+      const personalityMap: Record<string, string> = {
+        계획적인: "PLANNED",
+        활기있는: "ENERGETIC",
+        사교적인: "SOCIABLE",
+        차분한: "CALM",
+        분석적인: "ANALYTICAL",
+        충동적인: "IMPULSIVE",
+        진지한: "SERIOUS",
+        열정적인: "PASSIONATE",
+        완벽주의: "PERFECTIONIST",
+        솔직한: "HONEST",
+        절제하는: "RESTRAINED",
+        공격적인: "AGGRESSIVE",
+        깔끔한: "NEAT",
+        질투많은: "JEALOUS",
+        검소한: "FRUGAL",
+        우울한: "MELANCHOLIC",
+        덜렁이는: "CARELESS",
+        욕심있는: "GREEDY",
+        내성적: "INTROVERTED",
+        외향적: "EXTROVERTED",
+        단순한: "SIMPLE",
+        외톨이: "LONER",
+      };
+  
+      const personalities = keywords.map((k) => personalityMap[k]).filter(Boolean);
+  
+      await userApi.createProfile({
+        nickname: nickname.trim(),
+        birthDate,
+        gender: genderValue,
+        personalities,
+      });
+      navigate("/onboarding/interests"); // 2단계로 이동
+    } catch (err: any) {
+      toast.error(err.message || "프로필 등록 중 오류가 발생했습니다.", {
+        autoClose: 3000,
+      });
+    }
   };
 
   return (
