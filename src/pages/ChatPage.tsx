@@ -1,6 +1,6 @@
 // src/pages/ChatPage.tsx
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, useParams } from 'react-router-dom';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import FriendSidebar from '../components/friends/FriendSidebar';
 import ChatList from '../components/Chat/ChatList';
@@ -10,13 +10,24 @@ import { useChat, useChatMessages } from '../hooks/useChat';
 import { AuthService } from '../services/authService';
 
 const ChatPage: React.FC = () => {
+  const navigate = useNavigate();
   const { chatRooms, loading, error, fetchChatRooms } = useChat();
   const currentUserId = AuthService.getUserId();
+  
+  useEffect(() => {
+    if (!currentUserId) {
+      alert("로그인이 필요한 서비스입니다.")
+      navigate('/login', { replace: true });
+    }
+  }, [currentUserId, navigate]);
+
 
   // 컴포넌트 마운트 시 채팅방 목록 로드
   useEffect(() => {
-    fetchChatRooms();
-  }, [fetchChatRooms]);
+    if (currentUserId) {
+      fetchChatRooms();
+    }
+  }, [currentUserId, fetchChatRooms]);
 
   // 채팅방 정보 가져오기
   const getChatRoomById = (roomUuid: string) => {
@@ -25,16 +36,7 @@ const ChatPage: React.FC = () => {
 
   // 로그인하지 않은 경우 처리
   if (!currentUserId) {
-    return (
-      <PageContainer>
-        <FriendSidebar />
-        <ContentArea>
-          <ErrorContainer>
-            <div>로그인이 필요합니다.</div>
-          </ErrorContainer>
-        </ContentArea>
-      </PageContainer>
-    );
+    return null;
   }
 
   if (loading) {

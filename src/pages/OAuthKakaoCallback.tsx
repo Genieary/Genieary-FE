@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import styled from "styled-components";
+import { UserApi } from "../api/userApi";
 
 const OAuthKakaoCallback: React.FC = () => {
   const [called, setCalled] = useState(false);
@@ -13,22 +14,35 @@ const OAuthKakaoCallback: React.FC = () => {
     const code = params.get("code");
 
     const handleKakaoCallback = async () => {
-      if (!called && code) {
-        setCalled(true); // 중복 방지
+      try {
+        const code = new URL(window.location.href).searchParams.get("code");
+        if (!code) {
+          console.warn("카카오 인증 코드가 없습니다.");
+          navigate("/login");
+          return;
+        }
+
+        if (called) return;
+        setCalled(true); //중복 방지
         
         const result = await kakaoLogin({ code });
-        
-        if (result) {
-          // 로그인 성공 시 메인 페이지로 이동
-          navigate('/');
-        } else {
-          // 에러가 발생한 경우
-          alert('카카오 로그인에 실패했습니다.');
-          navigate('/login');
+        if (!result) {
+          alert("카카오 로그인에 실패했습니다.");
+          navigate("/login");
+          return;
         }
-      } else if (!code) {
-        // 코드가 없는 경우 로그인 페이지로 이동
-        navigate('/login');
+
+        try {
+          const userApi = new UserApi();
+          const isCompleted = await userApi.getProfileStatus();
+          navigate(isCompleted ? "/" : "/onboarding/profile");
+        } catch (profileErr) {
+          console.error("프로필 상태 확인 중 오류:", profileErr);
+          navigate("/");
+        }
+      } catch (err) {
+        console.error("카카오 로그인 처리 중 오류:", err);
+        navigate("/login");
       }
     };
 

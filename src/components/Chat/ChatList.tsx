@@ -37,11 +37,16 @@ const ChatList: React.FC<ChatListProps> = ({ chatRooms }) => {
           {chatRooms.map((room) => {
             const displayName = room.otherUser.nickname || `user${room.otherUser.id}`;
             const hasUnreadMessage = false; // 추후 읽음 상태 로직 추가
+            const profileImage = room.otherUser.profileImage;
             
             return (
               <ChatRoomItem key={room.roomUuid} to={`/friends/chat/${room.roomUuid}`}>
                 <AvatarContainer>
-                  <Avatar/>
+                  {profileImage ? (
+                    <AvatarImage src={profileImage} alt={`${displayName}의 프로필`} />
+                  ) : (
+                    <DefaultAvatar>{displayName.charAt(0)}</DefaultAvatar>
+                  )}
                   {hasUnreadMessage && <UnreadDot />}
                 </AvatarContainer>
                 <ChatInfo>
@@ -171,7 +176,15 @@ const AvatarContainer = styled.div`
   margin-right: 12px;
 `;
 
-const Avatar = styled.div`
+const AvatarImage = styled.img`
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #eee;
+`;
+
+const DefaultAvatar = styled.div`
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -206,7 +219,7 @@ const ChatInfo = styled.div`
 
 const RoomName = styled.div`
   font-weight: 600;
-  font-size: 16px;
+  font-size: 18px;
   color: #333;
 `;
 
@@ -216,6 +229,7 @@ const LastMessage = styled.div`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 600;
 `;
 
 const Timestamp = styled.div`

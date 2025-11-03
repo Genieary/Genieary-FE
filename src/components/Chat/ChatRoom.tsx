@@ -105,6 +105,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
   }
 
   const displayName = currentChatRoom.otherUser.nickname || `user${currentChatRoom.otherUser.id}`;
+  const profileImage = currentChatRoom.otherUser.profileImage; 
    
   // DB 메시지 + 실시간 메시지 통합
   const allMessages = [
@@ -170,34 +171,60 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
           <EmptyMessage>대화를 시작해보세요!</EmptyMessage>
         ) : (
           allMessages.map((message, index) => {
-            // 이전 메시지와 날짜가 다르면 날짜 구분선 표시
-            const showDateSeparator = index === 0 || 
+            const showDateSeparator =
+              index === 0 ||
               !isSameDate(allMessages[index - 1]?.sentAt, message.sentAt);
+
+            const isMe = message.isMe;
 
             return (
               <React.Fragment key={message.id}>
                 {showDateSeparator && message.sentAt && (
                   <DateSeparator>
                     <DateSeparatorLine />
-                    <DateSeparatorText>
-                      {formatDateSeparator(message.sentAt)}
-                    </DateSeparatorText>
+                    <DateSeparatorText>{formatDateSeparator(message.sentAt)}</DateSeparatorText>
                     <DateSeparatorLine />
                   </DateSeparator>
                 )}
-                <MessageBubble isMe={message.isMe}>
-                  <MessageContent isMe={message.isMe}>
-                    {message.content}
-                  </MessageContent>
-                  <MessageTime>{message.timestamp}</MessageTime>
-                </MessageBubble>
+
+                <MessageRow isMe={isMe}>
+                  {/* 상대방 메시지일 때만 프로필 표시 */}
+                  {!isMe && (
+                    <ProfileColumn>
+                      {currentChatRoom.otherUser.profileImage ? (
+                        <ProfileImg
+                          src={currentChatRoom.otherUser.profileImage}
+                          alt={`${displayName}의 프로필`}
+                        />
+                      ) : (
+                        <DefaultAvatar>{displayName.charAt(0)}</DefaultAvatar>
+                      )}
+                    </ProfileColumn>
+                  )}
+
+                    <ContentColumn isMe={isMe}> 
+                    {!isMe && <SenderName>{displayName}</SenderName>}
+                    <MessageLine isMe={isMe}>
+                      {isMe ? (
+                        <>
+                          <MessageTime>{message.timestamp}</MessageTime>
+                          <MessageContent isMe={isMe}>{message.content}</MessageContent>
+                        </>
+                      ) : (
+                        <>
+                          <MessageContent isMe={isMe}>{message.content}</MessageContent>
+                          <MessageTime>{message.timestamp}</MessageTime>
+                        </>
+                      )}
+                    </MessageLine>
+                  </ContentColumn>
+                </MessageRow>
               </React.Fragment>
             );
           })
         )}
         <div ref={messagesEndRef} />
       </MessagesContainer>
-      
       <InputContainer>
         <MessageInput
           value={inputValue}
@@ -297,25 +324,28 @@ const DateSeparatorText = styled.span`
   white-space: nowrap;
 `;
 
-const MessageBubble = styled.div<{ isMe: boolean }>`
+const MessageLine = styled.div<{ isMe: boolean }>`
   display: flex;
-  flex-direction: column;
-  align-items: ${props => props.isMe ? 'flex-end' : 'flex-start'};
-  gap: 4px;
+  align-items: flex-end;
+  justify-content: ${({ isMe }) => (isMe ? 'flex-end' : 'flex-start')};
+  gap: 6px;
 `;
 
 const MessageContent = styled.div<{ isMe: boolean }>`
-  background: ${props => props.isMe ? '#007bff' : '#f5f5f5'};
-  color: ${props => props.isMe ? 'white' : '#333'};
-  padding: 12px 16px;
+  background: ${({ isMe }) => (isMe ? '#007bff' : '#f5f5f5')};
+  color: ${({ isMe }) => (isMe ? 'white' : '#333')};
+  padding: 10px 14px;
   border-radius: 12px;
-  max-width: 70%;
+  max-width: 60%;
   word-wrap: break-word;
+  font-size: 14px;
+  font-weight: 600;
 `;
 
 const MessageTime = styled.span`
-  font-size: 12px;
+  font-size: 11px;
   color: #999;
+  white-space: nowrap;
 `;
 
 const InputContainer = styled.div`
@@ -384,6 +414,54 @@ const EmptyMessage = styled.div`
   padding: 40px 20px;
   font-size: 16px;
 `;
+
+const MessageRow = styled.div<{ isMe: boolean }>`
+  display: flex;
+  align-items: flex-start;
+  justify-content: ${({ isMe }) => (isMe ? 'flex-end' : 'flex-start')};
+  gap: 8px;
+  margin-bottom: 6px;
+`;
+
+const ProfileColumn = styled.div`
+  flex-shrink: 0;
+`;
+
+const ProfileImg = styled.img`
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+`;
+
+const DefaultAvatar = styled.div`
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e9f7ef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2b8a3e;
+  font-weight: 700;
+  font-size: 14px;
+  text-transform: uppercase;
+`;
+
+const ContentColumn = styled.div<{ isMe: boolean }>`
+  display: flex;
+  flex-direction: column;
+  align-items: ${({ isMe }) => (isMe ? 'flex-end' : 'flex-start')};
+  max-width: 70%;
+`;
+
+const SenderName = styled.span`
+  font-size: 12px;
+  color: #777;
+  margin-bottom: 2px;
+  font-weight: 600;
+`;
+
 
 const MenuIcon = styled(MenuSvg)`width: 18px; height: 18px; fill: #666;`;
 const CameraIcon = styled(CameraSvg)`width: 20px; height: 20px;`;

@@ -19,7 +19,7 @@ export interface ChatRoomResponse {
 export interface UserResponse {
   id: number;
   nickname: string| null;
-  imageFileName: string| null;
+  profileImage: string| null;
 }
 
 export interface ChatMessageResponse {
