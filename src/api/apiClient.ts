@@ -1,4 +1,5 @@
 // src/api/apiClient.ts
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { ApiResponse } from '../types/auth';
 import { AuthService } from '../services/authService';
 
@@ -7,10 +8,38 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 
 export class ApiClient {
   private static instance: ApiClient;
-  private baseURL: string;
+  private client: AxiosInstance;
 
   private constructor() {
-    this.baseURL = API_BASE_URL;
+    this.client = axios.create({
+      baseURL: API_BASE_URL,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    // ✅ 요청 인터셉터
+    this.client.interceptors.request.use(
+      (config) => {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+
+    // ✅ 응답 인터셉터
+    this.client.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        const status = error.response?.status || 500;
+        const message =
+          error.response?.data?.message || error.message || 'Unknown error occurred';
+        return Promise.reject({ status, message });
+      }
+    );
   }
 
   public static getInstance(): ApiClient {
@@ -22,52 +51,22 @@ export class ApiClient {
 
   async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    config: AxiosRequestConfig = {}
   ): Promise<ApiResponse<T>> {
     try {
-      const url = `${this.baseURL}/${endpoint.replace(/^\//, '')}`;
-      
-      const defaultHeaders: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-
-      // 토큰이 있으면 Authorization 헤더 추가
-      const token = AuthService.getAccessToken();
-      if (token) {
-        defaultHeaders['Authorization'] = `Bearer ${token}`;
-      }
-
-      const config: RequestInit = {
-        ...options,
-        headers: {
-          ...defaultHeaders,
-          ...options.headers,
-        },
-      };
-
-      const response = await fetch(url, config);
-      const data = await response.json();
-
-      if (!response.ok) {
-         // 401 에러일 경우 자동 로그아웃
-         if (response.status === 401) {
-          AuthService.logout();
-          window.location.href = '/login';
-         }
-        return {
-          error: data.message || `HTTP error! status: ${response.status}`,
-          status: response.status,
-        };
-      }
+      const response: AxiosResponse<T> = await this.client.request({
+        url: endpoint,
+        ...config,
+      });
 
       return {
-        data,
+        data: response.data,
         status: response.status,
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
-        error: error instanceof Error ? error.message : 'Unknown error occurred',
-        status: 500,
+        error: error.message,
+        status: error.status || 500,
       };
     }
   }

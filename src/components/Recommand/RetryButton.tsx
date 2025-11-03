@@ -1,6 +1,10 @@
 import React from "react";
 import styled from "styled-components";
 
+interface Props {
+  onClick?: () => void;
+}
+
 const ButtonFixed = styled.button`
   position: fixed;
   right: 95px;
@@ -17,14 +21,11 @@ const ButtonFixed = styled.button`
   padding: 10px 32px 10px 24px;
   border-radius: 30px;
   cursor: pointer;
-  outline: none;
-  box-shadow: none;
   transition: background 0.15s, color 0.15s, border 0.15s;
 
   &:hover {
     background: #fff3d1;
     border-color: #ff9900;
-    color: #ff9900;
   }
 `;
 
@@ -33,8 +34,8 @@ const ButtonArrow = styled.span`
   font-weight: 900;
 `;
 
-const RetryButton: React.FC = () => (
-  <ButtonFixed>
+const RetryButton: React.FC<Props> = ({ onClick }) => (
+  <ButtonFixed onClick={onClick}>
     <ButtonArrow>&gt;</ButtonArrow>
     <span style={{ fontWeight: 800, fontSize: "1.12rem" }}>재추천받기</span>
   </ButtonFixed>

@@ -74,7 +74,6 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
    useEffect(() => {
     if (!id) return;
     
-    setRealtimeMessages([]);
     fetchMessages();
   }, [id, fetchMessages]); 
 

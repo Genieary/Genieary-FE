@@ -1,4 +1,6 @@
 import React from 'react';
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar/Navbar';
 import LoginPage from './pages/LoginPage';
@@ -36,6 +38,7 @@ function App() {
         <Route path="/friends" element={<FriendsPage />} />
         <Route path="/friends/requests" element={<FriendRequestPage />} />
         <Route path="/friend-profile/:friendId" element={<FriendProfilePage />} />
+        <Route path="/friend/:friendId" element={<FriendProfilePage />} />
         <Route path="/friends/chat/*" element={<ChatPage />} />
         <Route path="/friends/search" element={<FriendSearchPage />} />
         <Route path="/mypage/*"
@@ -45,6 +48,7 @@ function App() {
         <Route path="/onboarding/interests" element={<OnboardingInterestsPage />} />
         <Route path="/onboarding" element={<Navigate to="/onboarding/profile" replace />} />
       </Routes>
+      <ToastContainer position="bottom-right" autoClose={1500} hideProgressBar newestOnTop closeOnClick pauseOnFocusLoss={false} draggable pauseOnHover theme="light"/>
     </BrowserRouter>
   );
 }
