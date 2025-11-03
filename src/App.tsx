@@ -27,6 +27,7 @@ function App() {
     <BrowserRouter>
       <Navbar />
       <Routes>
+      <Route path="/" element={<CalendarPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/api/auth/kakao/callback" element={<OAuthKakaoCallback />} />
