@@ -1,6 +1,6 @@
 // src/api/authApi.ts
 import { ApiClient } from './apiClient';
-import { LoginRequest, LoginResponse, KakaoLoginRequest } from '../types/auth';
+import { LoginRequest, LoginResponse, KakaoLoginRequest, SignupRequest, SignupResponse } from '../types/auth';
 
 export class AuthApi {
   private apiClient: ApiClient;
@@ -35,5 +35,30 @@ export class AuthApi {
     }
 
     return res;
+  }
+
+  async signup(data: SignupRequest) {
+    const res = await this.apiClient.request<SignupResponse>('/auth/signup', {
+      method: 'POST',
+      data,
+    });
+
+    if (!res.data) {
+      throw new Error(res.error || '회원가입 요청 실패');
+    }
+
+    return res.data;
+  }
+
+  async checkEmail(email: string): Promise<boolean> {
+    const res = await this.apiClient.request<boolean>('/auth/check-email', {
+      method: 'POST',
+      data: { email },
+    });
+
+    if (res.error) {
+      throw new Error(res.error);
+    }
+    return res.data ?? false;
   }
 }
