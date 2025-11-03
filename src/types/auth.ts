@@ -7,8 +7,20 @@ export interface LoginRequest {
   export interface KakaoLoginRequest {
     code: string;
   }
-  
+
   export interface LoginResponse {
+    userId: number;
+    accessToken: string;
+    refreshToken: string;
+  }
+
+  export interface SignupRequest {
+    email: string;
+    password: string;
+    passwordCheck: string;
+  }
+  
+  export interface SignupResponse {
     userId: number;
     accessToken: string;
     refreshToken: string;

@@ -4,6 +4,8 @@ import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import KakaoLoginButton from "../components/Login/KakaoLoginButton";
 import { useAuth } from "../hooks/useAuth";
+import { UserApi } from "../api/userApi";
+import { toast } from "react-toastify";
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -11,20 +13,30 @@ const LoginPage: React.FC = () => {
   const { login, loading, error } = useAuth();
   const navigate = useNavigate();
 
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !password) {
-      alert("이메일과 비밀번호를 입력해주세요.");
+      toast.error("이메일과 비밀번호를 입력해주세요.");
       return;
     }
 
-    const result = await login({ email, password });
-    
-    if (result) {
-      // 로그인 성공 시 메인 페이지로 이동
-      navigate("/");
+    try {
+      const result = await login({ email, password });
+
+      if (result) {
+        const userApi = new UserApi();
+        const isCompleted = await userApi.getProfileStatus();
+
+        if (isCompleted) {
+          navigate("/"); 
+        } else {
+          navigate("/onboarding/profile"); 
+        }
+      }
+    } catch (err: any) {
+      console.error("로그인 후 상태 확인 실패:", err);
+      toast.error(err.message || "로그인 처리 중 문제가 발생했습니다.");
     }
   };
 
