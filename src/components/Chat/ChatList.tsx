@@ -1,17 +1,19 @@
-import React from 'react';
+import React, {useState} from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { ChatRoomResponse } from '../../types/chat';
 import { formatTimestamp} from '../../utils/chatUtils';
 import { ReactComponent as PlusSvg } from '../../assets/plus.svg';
 import { ReactComponent as SearchSvg } from '../../assets/search.svg';
-//TODO: 읽음 로직 추가, 프로필 이미지
+import FriendSelectModal from './FriendSelectModal'; 
+//TODO: 읽음 로직 추가
 
 interface ChatListProps {
   chatRooms: ChatRoomResponse[];
 }
 
 const ChatList: React.FC<ChatListProps> = ({ chatRooms }) => {
+  const [isModalOpen, setModalOpen] = useState(false);
   return (
     <ChatListContainer>
       <Header>
@@ -21,12 +23,14 @@ const ChatList: React.FC<ChatListProps> = ({ chatRooms }) => {
             <SearchIcon />
           </IconButton>
 
-          <IconButton aria-label="새 채팅 시작">
+          <IconButton aria-label="새 채팅 시작" onClick={() => setModalOpen(true)}>
             <PlusIcon />
           </IconButton>
         </Actions>
       </Header>
-      
+
+      {isModalOpen && <FriendSelectModal onClose={() => setModalOpen(false)} />}
+
       {chatRooms.length === 0 ? (
         <EmptyState>
           <EmptyIcon>💬</EmptyIcon>
@@ -45,7 +49,7 @@ const ChatList: React.FC<ChatListProps> = ({ chatRooms }) => {
                   {profileImage ? (
                     <AvatarImage src={profileImage} alt={`${displayName}의 프로필`} />
                   ) : (
-                    <DefaultAvatar>{displayName.charAt(0)}</DefaultAvatar>
+                    <DefaultAvatar></DefaultAvatar>
                   )}
                   {hasUnreadMessage && <UnreadDot />}
                 </AvatarContainer>
@@ -193,8 +197,6 @@ const DefaultAvatar = styled.div`
   align-items: center;
   justify-content: center;
   color: #333;
-  font-weight: 600;
-  font-size: 16px;
   user-select: none;
 `;
 
