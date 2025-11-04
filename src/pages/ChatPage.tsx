@@ -1,72 +1,69 @@
-import React, { useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
+// src/pages/ChatPage.tsx
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import FriendSidebar from '../components/friends/FriendSidebar';
 import ChatList from '../components/Chat/ChatList';
 import ChatRoom from '../components/Chat/ChatRoom';
-import { ChatRoom as ChatRoomType, Message } from '../types/chat';
 import PhotoGallery from '../components/Chat/PhotoGallery';
+import { useChat, useChatMessages } from '../hooks/useChat';
+import { AuthService } from '../services/authService';
 
 const ChatPage: React.FC = () => {
-  // 채팅방 더미 데이터
-  const [chatRooms] = useState<ChatRoomType[]>([
-    {
-      id: '1',
-      name: '신정원',
-      lastMessage: '오늘 같이 커피 사갈까?',
-      timestamp: '오후 9:05',
-      hasUnreadMessage: false,
-    },
-    {
-      id: '2',
-      name: '정원왕',
-      lastMessage: '채팅 내용 몰라몰라',
-      timestamp: '어제',
-      hasUnreadMessage: false,
-    },
-    {
-      id: '3',
-      name: '김철수',
-      lastMessage: '안녕하세요!',
-      timestamp: '2025-06-27',
-      hasUnreadMessage: true,
-    },
-    {
-      id: '4',
-      name: '이영희',
-      lastMessage: '내일 만날까요?',
-      timestamp: '2025-06-27',
-      hasUnreadMessage: true,
+  const navigate = useNavigate();
+  const { chatRooms, loading, error, fetchChatRooms } = useChat();
+  const currentUserId = AuthService.getUserId();
+  
+  useEffect(() => {
+    if (!currentUserId) {
+      alert("로그인이 필요한 서비스입니다.")
+      navigate('/login', { replace: true });
     }
-  ]);
+  }, [currentUserId, navigate]);
 
-  // 메시지 더미 데이터
-  const [messages] = useState<Message[]>([
-    {
-      id: '1',
-      content: '오늘 같이 커피 사갈까?',
-      timestamp: '오후 2:30',
-      isMe: false,
-      type: 'text'
-    },
-    {
-      id: '2',
-      content: '좋아요! 몇 시에 만날까요?',
-      timestamp: '오후 2:32',
-      isMe: true,
-      type: 'text'
+
+  // 컴포넌트 마운트 시 채팅방 목록 로드
+  useEffect(() => {
+    if (currentUserId) {
+      fetchChatRooms();
     }
-  ]);
-
-  const handleSendMessage = (content: string) => {
-    console.log('Sending message:', content);
-    // 실제로는 여기서 메시지를 서버로 전송하고 상태를 업데이트
-  };
+  }, [currentUserId, fetchChatRooms]);
 
   // 채팅방 정보 가져오기
-  const getChatRoomById = (id: string) => {
-    return chatRooms.find(room => room.id === id);
+  const getChatRoomById = (roomUuid: string) => {
+    return chatRooms.find(room => room.roomUuid === roomUuid);
   };
+
+  // 로그인하지 않은 경우 처리
+  if (!currentUserId) {
+    return null;
+  }
+
+  if (loading) {
+    return (
+      <PageContainer>
+        <FriendSidebar />
+        <ContentArea>
+          <LoadingContainer>
+            <div>채팅방을 불러오는 중...</div>
+          </LoadingContainer>
+        </ContentArea>
+      </PageContainer>
+    );
+  }
+
+  if (error) {
+    return (
+      <PageContainer>
+        <FriendSidebar />
+        <ContentArea>
+          <ErrorContainer>
+            <div>오류가 발생했습니다: {error}</div>
+          </ErrorContainer>
+        </ContentArea>
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer>
@@ -81,8 +78,6 @@ const ChatPage: React.FC = () => {
             path="/:id" 
             element={
               <ChatRoom 
-                messages={messages} 
-                onSendMessage={handleSendMessage}
                 chatRooms={chatRooms}
                 getChatRoomById={getChatRoomById}
               />
@@ -100,6 +95,7 @@ const ChatPage: React.FC = () => {
 
 export default ChatPage;
 
+
 const PageContainer = styled.div`
   display: flex;
   align-items: flex-start; 
@@ -114,4 +110,40 @@ const ContentArea = styled.div`
   display: flex;
   flex-direction: column;
 align-self: stretch;
+`;
+
+
+const LoadingContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+`;
+
+const ErrorContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  gap: 16px;
+  
+  button {
+    padding: 8px 16px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    
+    &:hover {
+      background: #0056b3;
+    }
+  }
 `;
