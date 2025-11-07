@@ -1,143 +1,58 @@
-import React, { useMemo, useState, useEffect } from 'react';
+// src/pages/CalendarPage.tsx
+import React, { useMemo, useState } from 'react';
 import styled from 'styled-components';
 import CalendarHeader from '../components/Calender/CalendarHeader';
 import CalendarGrid from '../components/Calender/CalendarGrid';
 import Holidays from '../components/Sidebar/Holidays';
 import Summary from '../components/Sidebar/Summary';
+import UpcomingEvents from '../components/Sidebar/UpcomingEvents'; // 원하면 이쪽도 pinned 쓰도록 수정 가능
 import DiaryDetailPage from './DiaryDetailPage';
 import { CalendarProvider, useCalendar } from '../store/calendarStore';
-import { getSchedulesByDate, getMonthlyEvents } from '../api/scheduleApi';
-import { getCalendar, getMonthlySummary } from '../api/calendarApi';
 
-const CalendarPageInner = ({
-  currentDate,
-  setCurrentDate,
-}: {
-  currentDate: Date;
-  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
-}) => {
-  
+const CalendarPageInner = () => {
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showDiaryDetail, setShowDiaryDetail] = useState(false);
+  const { groupEventsByDate } = useCalendar();
 
-  // ✅ API 데이터 상태
-  const [schedules, setSchedules] = useState<any[]>([]);
-  const [summaryText, setSummaryText] = useState<string>('');
-  const [loading, setLoading] = useState(true);
-  const { groupEventsByDate, state } = useCalendar();
-
-  // ✅ 달 바뀔 때마다 일정 & 요약 불러오기
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-
-        const year = currentDate.getFullYear();
-        const month = currentDate.getMonth() + 1;
-
-        // ✅ 백엔드에서 해당 달의 캘린더 가져오기
-        console.log("📤 getCalendar 호출:", year, month);
-        const calendar = await getCalendar(year, month);
-        console.log("📘 getCalendar 응답:", calendar);
-
-        if (!calendar || !calendar.calendarId) {
-          console.warn('⚠️ 해당 달의 캘린더가 존재하지 않습니다.');
-          setSummaryText('요약을 불러오지 못했습니다.');
-          return;
-        }
-
-        const calendarId = calendar.calendarId;
-        console.log('📘 내 캘린더 ID:', calendarId);
-
-        // ✅ 이벤트 + 요약 동시 요청
-        const [monthlyEvents, summary] = await Promise.all([
-          getMonthlyEvents(year, month),
-          getMonthlySummary(calendarId),
-        ]);
-
-        setSchedules(monthlyEvents);
-        setSummaryText(summary);
-      } catch (err) {
-        console.error('캘린더 데이터 불러오기 실패:', err);
-        setSummaryText('요약을 불러오지 못했습니다.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [currentDate]);
-
-  // ✅ store에 그룹핑 로직 있으면 그대로 유지
-const eventsByDate = useMemo(() => groupEventsByDate(), [groupEventsByDate, state.events]);
-
-
-  // ✅ 날짜 클릭 시 — 해당 날짜 일정 조회
-  const handleDateClick = async (date: Date) => {
-  // 1️⃣ 먼저 바로 화면 전환
-  setSelectedDate(date);
-  setShowDiaryDetail(true);
-
-  // 2️⃣ 이후 비동기로 일정 불러오기 (콘솔 출력용)
-  try {
-    const formatted = date.toISOString().split('T')[0];
-    const daySchedules = await getSchedulesByDate(formatted);
-    console.log('📅 선택한 날짜의 일정:', daySchedules);
-  } catch (err) {
-    console.error('선택 날짜 일정 조회 실패:', err);
-  }
-};
-
+  const eventsByDate = useMemo(() => groupEventsByDate(), [groupEventsByDate]);
 
   const handlePrevMonth = () =>
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-
   const handleNextMonth = () =>
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
 
+  const handleDateClick = (date: Date) => {
+    setSelectedDate(date);
+    setShowDiaryDetail(true);
+  };
+
   if (showDiaryDetail && selectedDate) {
-    return (
-      <DiaryDetailPage
-        selectedDate={selectedDate}
-        onBack={() => setShowDiaryDetail(false)}
-      />
-    );
+    return <DiaryDetailPage selectedDate={selectedDate} onBack={() => setShowDiaryDetail(false)} />;
   }
 
   return (
     <Wrapper>
       <Sidebar>
         <Holidays currentDate={currentDate} />
-        <Summary summaryText={summaryText} loading={loading} />
+        <Summary />
+        {/* <UpcomingEvents /> 원하면 여기서도 pinned/다가올 일정만 보여주기 */}
       </Sidebar>
       <Main>
         <CalendarGridWrapper>
-          <CalendarHeader
-            currentDate={currentDate}
-            onPrevMonth={handlePrevMonth}
-            onNextMonth={handleNextMonth}
-          />
-          <CalendarGrid
-            currentDate={currentDate}
-            onDateClick={handleDateClick}
-            eventsByDate={eventsByDate}
-          />
+          <CalendarHeader currentDate={currentDate} onPrevMonth={handlePrevMonth} onNextMonth={handleNextMonth} />
+          <CalendarGrid currentDate={currentDate} onDateClick={handleDateClick} eventsByDate={eventsByDate} />
         </CalendarGridWrapper>
       </Main>
     </Wrapper>
   );
 };
 
-const CalendarPage = () => {
-  const [currentDate, setCurrentDate] = useState(new Date());
-
-  return(
-  <CalendarProvider currentDate={currentDate}>
-    <CalendarPageInner currentDate={currentDate}
-        setCurrentDate={setCurrentDate} />
+const CalendarPage = () => (
+  <CalendarProvider>
+    <CalendarPageInner />
   </CalendarProvider>
-  );
-};
+);
 
 export default CalendarPage;
 
@@ -146,8 +61,6 @@ const Wrapper = styled.div`display: flex; gap: 24px; padding: 32px;`;
 const Sidebar = styled.div`width: 240px; display: flex; flex-direction: column; gap: 20px;`;
 const Main = styled.div`flex: 1; display: flex; flex-direction: column; gap: 16px;`;
 const CalendarGridWrapper = styled.div`
-  background-color: white;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  padding: 10px;
-  border-radius: 16px;
+  background-color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  padding: 10px; border-radius: 16px;
 `;

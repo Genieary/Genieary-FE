@@ -1,9 +1,10 @@
+// CalendarDay.tsx
 import React from 'react';
 import styled from 'styled-components';
 
 export interface DayEvent {
   title: string;
-  color?: string;
+  color?: string;   // (있으면 배경으로 우선 사용)
 }
 
 interface CalendarDayProps {
@@ -22,38 +23,31 @@ const PALETTES = [
   { bg: '#FFE3E2', fg: '#E85C5A' },
 ] as const;
 
-// // 🎲 랜덤 팔레트 선택 함수
-// const pickPalette = (title: string, day?: number, overrideBg?: string) => {
-//   if (overrideBg) {
-//     const found = PALETTES.find(p => p.bg.toLowerCase() === overrideBg.toLowerCase());
-//     return found ?? { bg: overrideBg, fg: '#000' };
-//   }
+const hash = (s: string) => {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h << 5) - h + s.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+};
 
-//   // 🔥 랜덤 인덱스 생성
-//   const idx = Math.floor(Math.random() * PALETTES.length);
-//   return PALETTES[idx];
-// };
+// color가 지정되면 그걸 bg로 쓰고, 매핑 가능한 경우 fg도 맞춰줌
 const pickPalette = (title: string, day?: number, overrideBg?: string) => {
-  // 만약 명시적인 color가 있으면 우선 사용
   if (overrideBg) {
     const found = PALETTES.find(p => p.bg.toLowerCase() === overrideBg.toLowerCase());
     return found ?? { bg: overrideBg, fg: '#000' };
   }
-
-  // 🎲 항상 랜덤 팔레트 반환 (색이 없더라도)
-  const idx = Math.floor(Math.random() * PALETTES.length);
+  const idx = hash(`${title}|${day ?? ''}`) % PALETTES.length;
   return PALETTES[idx];
 };
 
-
-
-/** ------ 메인 컴포넌트 ------ */
 const CalendarDay: React.FC<CalendarDayProps> = ({
   day, isToday, isHoliday, isCurrentMonth, events = [], onClick,
 }) => {
   return (
-    <Wrapper $isToday={isToday} $isHoliday={isHoliday} onClick={onClick}>
-      <DayNumber $isCurrentMonth={isCurrentMonth}>{day ?? ''}</DayNumber>
+    <Wrapper isToday={isToday} isHoliday={isHoliday} onClick={onClick}>
+      <DayNumber isCurrentMonth={isCurrentMonth}>{day ?? ''}</DayNumber>
       <Events>
         {events.map((ev, idx) => {
           const { bg, fg } = pickPalette(ev.title, day, ev.color);
@@ -71,9 +65,8 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
 export default CalendarDay;
 
 /** ------ styles ------ */
-// ✅ transient props ($)로 변경해서 DOM 전달 방지
-const Wrapper = styled.div<{ $isToday?: boolean; $isHoliday?: boolean }>`
-  background-color: ${({ $isToday }) => ($isToday ? '#E0E6FF' : '#F8F9FA')};
+const Wrapper = styled.div<{ isToday?: boolean; isHoliday?: boolean }>`
+  background-color: ${({ isToday }) => (isToday ? '#E0E6FF' : '#F8F9FA')};
   border-radius: 8px;
   padding: 6px 8px;
   min-height: 80px;
@@ -84,14 +77,14 @@ const Wrapper = styled.div<{ $isToday?: boolean; $isHoliday?: boolean }>`
   cursor: pointer;
 
   &:hover {
-    background-color: ${({ $isToday }) => ($isToday ? '#d4daff' : '#e9ecef')};
+    background-color: ${({ isToday }) => (isToday ? '#d4daff' : '#e9ecef')};
   }
 `;
 
-const DayNumber = styled.div<{ $isCurrentMonth?: boolean }>`
+const DayNumber = styled.div<{ isCurrentMonth?: boolean }>`
   font-weight: 500;
   font-size: 14px;
-  color: ${({ $isCurrentMonth }) => ($isCurrentMonth ? '#000' : '#ccc')};
+  color: ${({ isCurrentMonth }) => (isCurrentMonth ? '#000' : '#ccc')};
 `;
 
 const Events = styled.div`
@@ -101,6 +94,7 @@ const Events = styled.div`
   margin-top: 4px;
 `;
 
+// transient props로 DOM 전달 방지
 const Event = styled.div<{ $bg: string; $fg: string }>`
   background-color: ${({ $bg }) => $bg};
   color: ${({ $fg }) => $fg};

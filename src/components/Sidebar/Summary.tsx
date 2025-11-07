@@ -1,28 +1,14 @@
 import React from 'react';
 import styled from 'styled-components';
 
-interface SummaryProps {
-  summaryText?: string;   // 한 달 요약 내용 (API에서 받아옴)
-  loading?: boolean;      // 로딩 상태 (선택)
-}
-
-const Summary: React.FC<SummaryProps> = ({ summaryText, loading }) => {
-  if (loading) {
-    return (
-      <Box>
-        <Title>Summary</Title>
-        <Content>요약 불러오는 중...</Content>
-      </Box>
-    );
-  }
-
+const Summary: React.FC = () => {
   return (
     <Box>
       <Title>Summary</Title>
       <Content>
-        {summaryText
-          ? summaryText
-          : '요약이 아직 생성되지 않았어요 😌'}
+        이번달은 여행을 많이 다니신 것 같네요. <br />
+        중요한 프로젝트를 위해 약간의 스트레스를 받은 것 같아요. <br />
+        다음달은 스트레스 덜고 미리 준비하는 게 어떨까요 😊
       </Content>
     </Box>
   );
@@ -44,5 +30,4 @@ const Title = styled.div`
 
 const Content = styled.div`
   line-height: 1.5;
-  white-space: pre-wrap; /* 줄바꿈 유지 */
 `;
