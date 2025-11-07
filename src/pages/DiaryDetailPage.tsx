@@ -7,7 +7,7 @@ import { dateKeyOf, useCalendar } from '../store/calendarStore';
 import { createDiary, getDiaryByDate, getDiaryById, updateDiary, deleteDiary } from '../api/diaryApi';
 import type { EventItem } from '../store/calendarStore';
 import { getRecommendGifts } from '../api/recommendApi';
-import { analyzeEmotionByFile } from '../api/analysisApi';
+import { analyzeEmotionByUrl, getAnalysisByDiaryId, deleteAnalysisByDiaryId } from '../api/analysisApi';
 import { formatDateForServer } from '../utils/dateUtils';
 import { getPresignedUploadUrl, getDiaryFaceUrl } from '../api/diaryApi'; // 새로 추가 예정
 
@@ -72,12 +72,15 @@ useEffect(() => {
 
         // ✅ 얼굴 사진 Presigned 다운로드 URL 불러오기
         const face = await getDiaryFaceUrl(diary.diaryId);
+
+        const analysis = await getAnalysisByDiaryId(diary.diaryId);
+
         if (face?.url) {
           setPhoto({
             date: key,
             imageDataUrl: face.url,
-           summary: 'AI 분석 결과 없음',
-
+            summary: analysis?.analysis ?? "AI 분석 결과 없음",
+            stats: analysis?.allPredictions ?? {},
 
           });
         }
@@ -234,39 +237,115 @@ const handleCancelEdit = async () => {
 
   // 사진 분석 (더미)
   const analysis = getPhoto(key);
+// const handleAnalyzeFromDataUrl = async (dataUrl: string) => {
+//   try {
+//     // 1️⃣ DataURL → Blob 변환
+//     const res = await fetch(dataUrl);
+//     const blob = await res.blob();
+   
+//     // 2️⃣ S3 업로드용 Presigned URL 요청
+//     const date = formatDateForServer(selectedDate);
+//     const { url } = await getPresignedUploadUrl(date, blob.type); // ← 새 API 함수
+//     console.log("📸 Presigned URL 발급됨:", url);
+
+//     // 3️⃣ 해당 URL로 PUT 업로드
+//     await fetch(url, {
+//         method: 'PUT',
+//         headers: { 'Content-Type': blob.type },
+//         body: blob,
+// });
+//   console.log("✅ S3 업로드 완료");
+
+// // 4️⃣ Spring Boot AI 분석 요청 (S3 URL + 일기날짜)
+//     const result = await analyzeEmotionByUrl(date, url);
+//     console.log("✅ 감정 분석 완료:", result);
+
+//     // 5️⃣ 상태 저장 (로컬)
+//     setPhoto({
+//       date: key,
+//       imageDataUrl: dataUrl,
+//       summary: result.analysis ??`현재 감정은 ${result.predicted_emotion}입니다.`,
+//       stats: result.all_predictions,
+//     });
+
+//     console.log('✅ 사진 업로드 + 분석 완료');
+//   } catch (error) {
+//     console.error('❌ 감정 분석 실패:', error);
+//   }
+// };
 const handleAnalyzeFromDataUrl = async (dataUrl: string) => {
   try {
     // 1️⃣ DataURL → Blob 변환
     const res = await fetch(dataUrl);
     const blob = await res.blob();
-    const file = new File([blob], 'capture.png', { type: blob.type });
-    // 2️⃣ S3 업로드용 Presigned URL 요청
+
+    // 2️⃣ 일기 ID 확인 (없으면 먼저 생성)
+    let currentDiaryId = diaryId;
+    if (!currentDiaryId) {
+      const body = {
+        content: diaryContent || "(내용 없음)",
+        isLiked: false,
+        diaryDate: formatDateForServer(selectedDate),
+      };
+      const newDiary = await createDiary(body);
+      setDiaryId(newDiary.diaryId);
+      setDiary(key, newDiary);
+      currentDiaryId = newDiary.diaryId;
+      console.log("🆕 새 일기 생성 완료:", newDiary.diaryId);
+    }
+
+    // 3️⃣ S3 업로드용 Presigned URL 요청
     const date = formatDateForServer(selectedDate);
-    const { url } = await getPresignedUploadUrl(date, blob.type); // ← 새 API 함수
-    console.log("📸 Presigned URL 발급됨:", url);
+    const { url: uploadUrl } = await getPresignedUploadUrl(date, blob.type);
+    console.log("📸 Presigned Upload URL 발급:", uploadUrl);
 
-    // 3️⃣ 해당 URL로 PUT 업로드
-    await fetch(url, {
-        method: 'PUT',
-        headers: { 'Content-Type': blob.type },
-        body: blob,
-});
-  console.log("✅ S3 업로드 완료");
-  
-    // 4️⃣ AI 분석 요청
-    const result = await analyzeEmotionByFile(file);
+    // 4️⃣ S3 업로드 실행 (PUT)
+    await fetch(uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": blob.type },
+      body: blob,
+    });
+    console.log("✅ S3 업로드 완료");
 
-    // 5️⃣ 상태 저장 (로컬)
+    // 5️⃣ 다운로드용 Presigned URL 요청 (GET)
+ if (!diaryId) {
+  console.error("❌ diaryId가 없습니다. 일기를 먼저 생성하세요.");
+  return;
+}
+
+const face = await getDiaryFaceUrl(diaryId);
+
+    const downloadUrl = face?.url;
+    if (!downloadUrl) {
+      throw new Error("다운로드 URL을 가져오지 못했습니다.");
+    }
+    console.log("✅ Presigned Download URL:", downloadUrl);
+
+    // 6️⃣ FastAPI로 감정 분석 요청
+    const result = await analyzeEmotionByUrl(date, downloadUrl);
+    console.log("✅ 감정 분석 완료:", result);
+
+    // 7️⃣ 결과 저장
     setPhoto({
       date: key,
-      imageDataUrl: dataUrl,
-      summary: `현재 감정은 ${result.predicted_emotion}입니다.`,
-      stats: result.all_predictions,
+      imageDataUrl: downloadUrl, // ✅ S3 URL 사용
+      summary: result.analysis ?? `현재 감정은 ${result.predictedEmotion}입니다.`,
+      stats: result.allPredictions,
     });
 
-    console.log('✅ 사진 업로드 + 분석 완료');
+    console.log("✅ 사진 업로드 + 분석 완료");
   } catch (error) {
-    console.error('❌ 감정 분석 실패:', error);
+    console.error("❌ 감정 분석 실패:", error);
+  }
+};
+const handleDeleteAnalysis = async () => {
+  if (!diaryId) return;
+  try {
+    await deleteAnalysisByDiaryId(diaryId);
+    clearPhoto(key); // store에서 삭제
+    alert("감정분석이 삭제되었습니다!");
+  } catch (err) {
+    console.error("❌ 감정분석 삭제 실패:", err);
   }
 };
 
@@ -378,20 +457,24 @@ useEffect(() => {
   <StatsBox>
    {Object.entries(analysis.stats).map(([emotion, value]) => {
   const mapped = EMOTION_MAP[emotion];
-  if (!mapped) return null; // 혹시 정의되지 않은 감정일 경우 skip
+  if (!mapped) return null;
 
   return (
     <EmotionTag key={emotion}>
-      <span>{mapped.emoji}</span> {mapped.label} {value.toFixed(1)}%
+      <span>{mapped.emoji}</span> {mapped.label} {value}
     </EmotionTag>
   );
 })}
+
+
 
   </StatsBox>
 )}
 
                 <div style={{ marginTop: 8 }}>
-                  <GhostButton onClick={() => clearPhoto(key)}>삭제하기</GhostButton>
+                  {/* <GhostButton onClick={() => clearPhoto(key)}>삭제하기</GhostButton> */}
+                  <GhostButton onClick={handleDeleteAnalysis}>삭제하기</GhostButton>
+
                 </div>
               </div>
             </AnalysisCard>
