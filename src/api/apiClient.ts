@@ -1,6 +1,8 @@
 // src/api/apiClient.ts
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { ApiResponse } from '../types/auth';
+import { AuthService } from '../services/authService';
+
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 

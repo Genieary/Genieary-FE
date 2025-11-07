@@ -1,43 +1,149 @@
-import React, { useState } from 'react';
+// src/components/Chat/ChatRoom.tsx
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { Message, ChatRoom as ChatRoomType }  from '../../types/chat';
-import { ReactComponent as MenuSvg }   from '../../assets/list.svg';
+import { Message, ChatRoomResponse } from '../../types/chat';
+import { useWebSocket } from '../../hooks/useWebsocket';
+import { useChatMessages } from '../../hooks/useChat';
+import { formatDateSeparator, isSameDate } from '../../utils/chatUtils';
+import { ReactComponent as MenuSvg } from '../../assets/list.svg';
 import { ReactComponent as CameraSvg } from '../../assets/camera.svg';
-import { ReactComponent as SendSvg }   from '../../assets/arrow-up.svg';
+import { ReactComponent as SendSvg } from '../../assets/arrow-up.svg';
 
 interface ChatRoomProps {
-  messages: Message[];
-  onSendMessage: (content: string) => void;
-  chatRooms: ChatRoomType[];
-  getChatRoomById: (id: string) => ChatRoomType | undefined;
+  chatRooms: ChatRoomResponse[];
+  getChatRoomById: (id: string) => ChatRoomResponse | undefined;
 }
 
 const ChatRoom: React.FC<ChatRoomProps> = ({ 
-  messages, 
-  onSendMessage, 
   chatRooms, 
   getChatRoomById 
 }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [inputValue, setInputValue] = useState('');
+  const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { sendMessage, subscribeToRoom, unsubscribeFromRoom, markAsRead, isConnected } = useWebSocket();
 
-  // 현재 채팅방 정보 가져오기
+  // DB에서 기존 메시지 로드
+  const { messages: dbMessages, loading: messagesLoading, fetchMessages } = useChatMessages(id || null);
+  
   const currentChatRoom = id ? getChatRoomById(id) : null;
+  const currentUserId = parseInt(localStorage.getItem('userId') || '0');
+
+   // DB 메시지를 UI 형태로 변환
+   const convertDbMessages = useCallback((messages: any[]): Message[] => {
+    return messages.map(msg => ({
+      id: msg.id.toString(),
+      content: msg.message,
+      timestamp: new Date(msg.sentAt).toLocaleTimeString('ko-KR', { 
+        hour: 'numeric', 
+        minute: '2-digit', 
+        hour12: true 
+      }),
+      sentAt: msg.sentAt,
+      isMe: msg.senderId === currentUserId,
+      type: 'text'
+    }));
+  }, [currentUserId]);
+
+
+  // 실시간 메시지 처리
+  const handleNewMessage = useCallback((message: any) => {
+    // 내가 보낸 메시지는 서버 브로드캐스트에서 제외
+    if (message.senderId === currentUserId) return;
+    
+    const newMessage: Message = {
+      id: message.id.toString(),
+      content: message.message,
+      timestamp: new Date().toLocaleTimeString('ko-KR', { 
+        hour: 'numeric', 
+        minute: '2-digit', 
+        hour12: true 
+      }),
+      sentAt: new Date().toISOString(), //정렬용 원본 날짜
+      isMe: false,
+      type: 'text'
+    };
+    
+    setRealtimeMessages(prev => [...prev, newMessage]);
+  }, [currentUserId]);
+
+   // 채팅방 변경 시 DB 메시지 로드 및 실시간 메시지 초기화
+   useEffect(() => {
+    if (!id) return;
+    
+    fetchMessages();
+  }, [id, fetchMessages]); 
+
+  // 방 구독 및 읽음 처리
+  useEffect(() => {
+    if (!id || !isConnected) return;
+
+    subscribeToRoom(id, handleNewMessage);
+    
+    const timer = setTimeout(() => markAsRead(id), 500);
+
+    return () => {
+      clearTimeout(timer);
+      unsubscribeFromRoom(id);
+    };
+  }, [id, isConnected, handleNewMessage, subscribeToRoom, unsubscribeFromRoom, markAsRead]);
+
+  // 스크롤 자동 이동
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [realtimeMessages, dbMessages]);
 
   if (!currentChatRoom) {
-    return (
-      <ChatRoomContainer>
-        <div>채팅방을 찾을 수 없습니다.</div>
-      </ChatRoomContainer>
-    );
+    return <ChatRoomContainer>채팅방을 찾을 수 없습니다.</ChatRoomContainer>;
   }
 
+  if (messagesLoading) {
+    return <ChatRoomContainer>메시지를 불러오는 중...</ChatRoomContainer>;
+  }
+
+  const displayName = currentChatRoom.otherUser.nickname || `user${currentChatRoom.otherUser.id}`;
+  const profileImage = currentChatRoom.otherUser.profileImage; 
+   
+  // DB 메시지 + 실시간 메시지 통합
+  const allMessages = [
+    ...convertDbMessages(dbMessages),
+    ...realtimeMessages
+  ].sort((a, b) => {
+    const dateA = a.sentAt ? new Date(a.sentAt).getTime() : 0;
+    const dateB = b.sentAt ? new Date(b.sentAt).getTime() : 0;
+    return dateA - dateB; // 오래된 메시지가 위로
+  });
+
   const handleSend = () => {
-    if (inputValue.trim()) {
-      onSendMessage(inputValue.trim());
-      setInputValue('');
+    if (!inputValue.trim() || !id) return;
+
+    const messageText = inputValue.trim();
+    const now = new Date().toISOString();
+    
+    // 낙관적 업데이트
+    setRealtimeMessages(prev => [...prev, {
+      id: `temp-${Date.now()}`,
+      content: messageText,
+      timestamp: new Date().toLocaleTimeString('ko-KR', { 
+        hour: 'numeric', 
+        minute: '2-digit', 
+        hour12: true 
+      }),
+      sentAt: now, 
+      isMe: true,
+      type: 'text'
+    }]);
+
+    setInputValue('');
+
+    try {
+      sendMessage(id, messageText);
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      alert('메시지 전송에 실패했습니다.');
     }
   };
 
@@ -48,55 +154,94 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
     }
   };
 
-  const handleMenuClick = () => navigate(`/friends/chat/${id}/photos`);
-
-  const handleBack = () => {
-    navigate('/friends/chat');
-  };
-
   return (
     <ChatRoomContainer>
       <ChatHeader>
-        <BackButton onClick={handleBack}>＜ 채팅 목록</BackButton>
+        <BackButton onClick={() => navigate('/friends/chat')}>＜ 채팅 목록</BackButton>
         <UserInfo>
-          <ChatTitle>{currentChatRoom.name}</ChatTitle>
-          <UserStatus>아이디</UserStatus>
+          <ChatTitle>{displayName}</ChatTitle>
         </UserInfo>
-        <IconButton aria-label="메뉴" onClick={handleMenuClick}>
-         <MenuIcon  />
+        <IconButton aria-label="메뉴" onClick={() => navigate(`/friends/chat/${id}/photos`)}>
+          <MenuIcon />
         </IconButton>
       </ChatHeader>
       
       <MessagesContainer>
-        <MessageGroup>
-          <UserAvatar />
-          <MessageContent>
-            <UserName>{currentChatRoom.name}</UserName>
-            <UserQuestion>오늘 같이 커피 사갈까?</UserQuestion>
-          </MessageContent>
-        </MessageGroup>
-        
-        <ImageMessage>
-          <ImagePlaceholder>사진</ImagePlaceholder>
-        </ImageMessage>
-        
-        <SuggestedReply>
-          오늘 같이 마가롱 사갈까?
-        </SuggestedReply>
+        {allMessages.length === 0 ? (
+          <EmptyMessage>대화를 시작해보세요!</EmptyMessage>
+        ) : (
+          allMessages.map((message, index) => {
+            const showDateSeparator =
+              index === 0 ||
+              !isSameDate(allMessages[index - 1]?.sentAt, message.sentAt);
+
+            const isMe = message.isMe;
+
+            return (
+              <React.Fragment key={message.id}>
+                {showDateSeparator && message.sentAt && (
+                  <DateSeparator>
+                    <DateSeparatorLine />
+                    <DateSeparatorText>{formatDateSeparator(message.sentAt)}</DateSeparatorText>
+                    <DateSeparatorLine />
+                  </DateSeparator>
+                )}
+
+                <MessageRow isMe={isMe}>
+                  {/* 상대방 메시지일 때만 프로필 표시 */}
+                  {!isMe && (
+                    <ProfileColumn>
+                      {currentChatRoom.otherUser.profileImage ? (
+                        <ProfileImg
+                          src={currentChatRoom.otherUser.profileImage}
+                          alt={`${displayName}의 프로필`}
+                        />
+                      ) : (
+                        <DefaultAvatar>{displayName.charAt(0)}</DefaultAvatar>
+                      )}
+                    </ProfileColumn>
+                  )}
+
+                    <ContentColumn isMe={isMe}> 
+                    {!isMe && <SenderName>{displayName}</SenderName>}
+                    <MessageLine isMe={isMe}>
+                      {isMe ? (
+                        <>
+                          <MessageTime>{message.timestamp}</MessageTime>
+                          <MessageContent isMe={isMe}>{message.content}</MessageContent>
+                        </>
+                      ) : (
+                        <>
+                          <MessageContent isMe={isMe}>{message.content}</MessageContent>
+                          <MessageTime>{message.timestamp}</MessageTime>
+                        </>
+                      )}
+                    </MessageLine>
+                  </ContentColumn>
+                </MessageRow>
+              </React.Fragment>
+            );
+          })
+        )}
+        <div ref={messagesEndRef} />
       </MessagesContainer>
-      
       <InputContainer>
         <MessageInput
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyPress={handleKeyPress}
           placeholder="메시지 입력"
+          disabled={!isConnected}
         />
-        <IconButton aria-label="카메라">
-             <CameraIcon />      
+        <IconButton aria-label="카메라" disabled={!isConnected}>
+          <CameraIcon />      
         </IconButton>
-        <SendButton aria-label="전송" onClick={handleSend}>
-            <SendIcon />
+        <SendButton 
+          aria-label="전송" 
+          onClick={handleSend}
+          disabled={!inputValue.trim() || !isConnected}
+        >
+          <SendIcon />
         </SendButton>
       </InputContainer>
     </ChatRoomContainer>
@@ -105,7 +250,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
 
 export default ChatRoom;
 
-// 스타일 컴포넌트들은 이전과 동일...
+// 스타일 컴포넌트들
 const ChatRoomContainer = styled.div`
   flex: 1;
   background: white;
@@ -122,6 +267,7 @@ const ChatHeader = styled.div`
   justify-content: space-between;
   padding: 16px 24px;
   border-bottom: 1px solid #eee;
+  position: relative;
 `;
 
 const BackButton = styled.button`
@@ -133,6 +279,9 @@ const BackButton = styled.button`
 `;
 
 const UserInfo = styled.div`
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -146,82 +295,57 @@ const ChatTitle = styled.h2`
   color: #333;
 `;
 
-const UserStatus = styled.span`
-  font-size: 14px;
-  color: #999;
-`;
-
 const MessagesContainer = styled.div`
   flex: 1;
   padding: 24px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
 `;
 
-const MessageGroup = styled.div`
+const DateSeparator = styled.div`
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  margin: 16px 0;
   gap: 12px;
 `;
 
-const UserAvatar = styled.div`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #fff3bf;
-  flex-shrink: 0;
+const DateSeparatorLine = styled.div`
+  flex: 1;
+  height: 1px;
+  background: #e0e0e0;
 `;
 
-const MessageContent = styled.div`
+const DateSeparatorText = styled.span`
+  font-size: 12px;
+  color: #999;
+  font-weight: 500;
+  white-space: nowrap;
+`;
+
+const MessageLine = styled.div<{ isMe: boolean }>`
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: flex-end;
+  justify-content: ${({ isMe }) => (isMe ? 'flex-end' : 'flex-start')};
+  gap: 6px;
 `;
 
-const UserName = styled.span`
-  font-weight: 600;
-  color: #333;
-  font-size: 14px;
-`;
-
-const UserQuestion = styled.div`
-  background: #f5f5f5;
-  padding: 12px 16px;
+const MessageContent = styled.div<{ isMe: boolean }>`
+  background: ${({ isMe }) => (isMe ? '#007bff' : '#f5f5f5')};
+  color: ${({ isMe }) => (isMe ? 'white' : '#333')};
+  padding: 10px 14px;
   border-radius: 12px;
-  color: #333;
+  max-width: 60%;
+  word-wrap: break-word;
   font-size: 14px;
   font-weight: 600;
 `;
 
-const ImageMessage = styled.div`
-  margin-left: 52px;
-`;
-
-const ImagePlaceholder = styled.div`
-  width: 200px;
-  height: 150px;
-  background: #ddd;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #666;
-  font-size: 16px;
-`;
-
-const SuggestedReply = styled.button`
-  font-weight: 600;
-  align-self: flex-end;
-  background: #007bff;
-  color: white;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 12px;
-  font-size: 14px;
-  cursor: pointer;
-  margin-top: auto;
+const MessageTime = styled.span`
+  font-size: 11px;
+  color: #999;
+  white-space: nowrap;
 `;
 
 const InputContainer = styled.div`
@@ -243,8 +367,12 @@ const MessageInput = styled.input`
   &:focus {
     border-color: #007bff;
   }
+  
+  &:disabled {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+  }
 `;
-
 
 const IconButton = styled.button`
   display: flex;
@@ -256,8 +384,13 @@ const IconButton = styled.button`
   cursor: pointer;
   border-radius: 50%;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: #f5f5f5;
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 `;
 
@@ -266,11 +399,70 @@ const SendButton = styled(IconButton)`
   width: 36px;
   height: 36px;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: #0056b3;
+  }
+  
+  &:disabled {
+    background: #ccc;
   }
 `;
 
-const MenuIcon   = styled(MenuSvg)`  width: 18px; height: 18px; fill: #666; `;
-const CameraIcon = styled(CameraSvg)` width: 20px; height: 20px;`;
-const SendIcon   = styled(SendSvg)`   width: 16px; height: 16px; fill: #fff; `;
+const EmptyMessage = styled.div`
+  text-align: center;
+  color: #999;
+  padding: 40px 20px;
+  font-size: 16px;
+`;
+
+const MessageRow = styled.div<{ isMe: boolean }>`
+  display: flex;
+  align-items: flex-start;
+  justify-content: ${({ isMe }) => (isMe ? 'flex-end' : 'flex-start')};
+  gap: 8px;
+  margin-bottom: 6px;
+`;
+
+const ProfileColumn = styled.div`
+  flex-shrink: 0;
+`;
+
+const ProfileImg = styled.img`
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+`;
+
+const DefaultAvatar = styled.div`
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e9f7ef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2b8a3e;
+  font-weight: 700;
+  font-size: 14px;
+  text-transform: uppercase;
+`;
+
+const ContentColumn = styled.div<{ isMe: boolean }>`
+  display: flex;
+  flex-direction: column;
+  align-items: ${({ isMe }) => (isMe ? 'flex-end' : 'flex-start')};
+  max-width: 70%;
+`;
+
+const SenderName = styled.span`
+  font-size: 12px;
+  color: #777;
+  margin-bottom: 2px;
+  font-weight: 600;
+`;
+
+
+const MenuIcon = styled(MenuSvg)`width: 18px; height: 18px; fill: #666;`;
+const CameraIcon = styled(CameraSvg)`width: 20px; height: 20px;`;
+const SendIcon = styled(SendSvg)`width: 16px; height: 16px; fill: #fff;`;
