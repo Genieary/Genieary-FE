@@ -400,7 +400,7 @@ useEffect(() => {
   };
 
   fetchGifts();
-}, [key, selectedDate, setGifts]);
+}, [key, selectedDate]);
 
   return (
     <Wrapper>

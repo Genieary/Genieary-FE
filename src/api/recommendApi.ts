@@ -1,8 +1,19 @@
-import axios from 'axios';
+// src/api/recommendApi.ts
+import api from './axiosInstance'; // calendarApi.ts와 동일하게 통일
 
+type ApiResponse<T> = {
+  isSuccess: boolean;
+  code: string;
+  message: string;
+  result: T;
+  pageInfo?: any;
+};
+
+// 🎁 추천 선물 조회 API
 export const getRecommendGifts = async (date: string) => {
-  const response = await axios.get('/api/recommend', {
+  console.log('📤 getRecommendGifts() 호출:', date);
+  const res = await api.get<ApiResponse<any>>(`/recommend`, {
     params: { date },
   });
-  return response.data;
+  return res.data.result || [];
 };
