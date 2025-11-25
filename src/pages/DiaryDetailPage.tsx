@@ -10,6 +10,8 @@ import { getRecommendGifts } from '../api/recommendApi';
 import { analyzeEmotionByUrl, getAnalysisByDiaryId, deleteAnalysisByDiaryId } from '../api/analysisApi';
 import { formatDateForServer } from '../utils/dateUtils';
 import { getPresignedUploadUrl, getDiaryFaceUrl } from '../api/diaryApi'; // 새로 추가 예정
+import { AuthService } from '../services/authService';
+import { useNavigate } from 'react-router-dom';
 
 // import {getDiaryFaceUrl}
 
@@ -19,6 +21,16 @@ interface DiaryDetailPageProps {
 }
 
 const DiaryDetailPage: React.FC<DiaryDetailPageProps> = ({ selectedDate, onBack }) => {
+  const navigate = useNavigate();
+  const currentUserId = AuthService.getUserId();
+
+  useEffect(() => {
+    if (!currentUserId) {
+      alert("로그인이 필요한 서비스입니다.");
+      navigate("/login", { replace: true });
+    }
+  }, [currentUserId, navigate]);
+
   const key = dateKeyOf(selectedDate);
   const captureRef = useRef<HTMLDivElement>(null);
 

@@ -1,5 +1,3 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { Routes, Route, Navigate } from "react-router-dom";
 import styled from "styled-components";
 import MyPageSidebar from "../components/mypage/MyPageSidebar";
@@ -7,17 +5,8 @@ import MyInfo from "../components/mypage/MyInfo";
 import PasswordCheck from "../components/mypage/PasswordCheck";
 import EditInfo from "../components/mypage/EditInfo";
 import SavedGifts from "../components/mypage/SavedGifts";
-import { AuthService } from "../services/authService";
 
 const MyPage = () => {
-  const navigate = useNavigate();
-  const currentUserId = AuthService.getUserId();
-  useEffect(() => {
-    if (!currentUserId) {
-      alert("로그인이 필요한 서비스입니다.");
-      navigate("/login", { replace: true });
-    }
-  }, [currentUserId, navigate]);
 
   return (
     <Wrapper>

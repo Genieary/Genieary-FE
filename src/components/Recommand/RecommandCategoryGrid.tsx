@@ -44,8 +44,9 @@ const CategoryCard = styled.button<CategoryCardProps>`
   ${({ selected }) =>
     selected &&
     css`
-      background: #D2F9D9;
-      box-shadow: 0 4px 16px rgba(43,138,74,0.09);
+   background: #d6ddff;
+      box-shadow: 0 6px 20px rgba(74, 108, 246, 0.18);
+      transform: translateY(-2px);
     `
   }
 
@@ -69,8 +70,8 @@ const CategoryIcon = styled.img<{ $hovered?: boolean; $selected?: boolean }>`
   ${({ $selected }) =>
     $selected &&
     css`
-      filter: brightness(0) saturate(100%) invert(41%) sepia(84%) saturate(413%) hue-rotate(84deg) brightness(92%) contrast(97%);
-      /* #2B8A4A */
+      filter: brightness(0) saturate(100%) invert(36%) sepia(98%) 
+        saturate(1250%) hue-rotate(210deg) brightness(94%) contrast(92%);
     `
   }
 
@@ -92,7 +93,7 @@ const CategoryLabel = styled.div<{ $hovered?: boolean; $selected?: boolean }>`
   ${({ $selected }) =>
     $selected &&
     css`
-      color: #2B8A4A;
+       color: #3A58E2;
     `
   }
 
