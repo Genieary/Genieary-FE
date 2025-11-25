@@ -2,23 +2,39 @@
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { getProfileImageUrl } from "../../api/s3Api";
+import { UserApi } from "../../api/userApi";
+import { personalityToKorean } from "../../utils/personalityUtils";
+
+const userApi = new UserApi();
 
 const MyInfo = () => {
   const navigate = useNavigate();
 
   const [profileImg, setProfileImg] = useState<string | null>(null);
+  const [nickname, setNickname] = useState("");
+  const [personalities, setPersonalities] = useState<string[]>([]);
+  const [userId, setUserId] = useState("");
+
   useEffect(() => {
-    const fetchProfileImage = async () => {
+    const fetchProfile = async () => {
       try {
-        const url = await getProfileImageUrl();
-        if (url) setProfileImg(url);
+        const data = await userApi.getProfile();
+
+        setProfileImg(data.profileImage);
+        setNickname(data.nickname);
+        setUserId(data.email);
+
+        const koreanPersonalities = data.personalities.map(
+          (p) => personalityToKorean[p] || p
+        );
+    
+        setPersonalities(koreanPersonalities);
       } catch (err) {
-        console.error("프로필 이미지 조회 실패:", err);
+        console.error("프로필 조회 실패:", err);
       }
     };
 
-    fetchProfileImage();
+    fetchProfile();
   }, []);
 
   return (
@@ -33,14 +49,15 @@ const MyInfo = () => {
       <Profile>
         <ProfileImg $img={profileImg}/>
         <InfoBlock>
-          <Name>고양이</Name>
-          <UserId>아이디</UserId>
+          <Name>{nickname}</Name>
+          <UserId>{userId}</UserId>
         </InfoBlock>
       </Profile>
 
+      
       <Row>
         <Label>닉네임</Label>
-        <Value>고양이</Value>
+        <Value>{nickname}</Value>
       </Row>
       <Row>
         <Label>비밀번호</Label>
@@ -49,9 +66,9 @@ const MyInfo = () => {
       <Row>
         <Label>성격키워드</Label>
         <TagList>
-          <Tag>열정적인</Tag>
-          <Tag>솔직한</Tag>
-          <Tag>공격적인</Tag>
+          {personalities.map((p) => (
+            <Tag key={p}>{p}</Tag>
+          ))}
         </TagList>
       </Row>
 

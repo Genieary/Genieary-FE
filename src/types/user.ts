@@ -35,6 +35,13 @@ export interface CreateInterestsRequest {
     interestCount: number;
   }
 
+  export interface UpdateUserRequest {
+    nickname: string; 
+    personalities: string[] ;
+  }
+
   export type CreateProfileResponse = ApiResponse<ProfileData>;
+  export type GetProfileResponse = ApiResponse<ProfileData>;
+  export type UpdateProfileResponse = ApiResponse<ProfileData>;
   export type CreateInterestsResponse = ApiResponse<InterestData>;
 export type InterestsResponse = ApiResponse<Record<string, InterestItem[]>>;
