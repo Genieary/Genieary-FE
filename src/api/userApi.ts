@@ -7,7 +7,10 @@ import {
   InterestItem,
   InterestsResponse,
   ProfileData,
-  InterestData
+  InterestData,
+  GetProfileResponse,
+  UpdateUserRequest,
+  UpdateProfileResponse
 } from "../types/user";
 import { ApiResponse } from "../types/api";
 
@@ -74,4 +77,34 @@ export class UserApi {
     if (res.error) throw new Error(res.error);
     return res.data?.result ?? false;
   }
+
+  async getProfile(): Promise<ProfileData> {
+    const res = await this.apiClient.request<GetProfileResponse>(
+      "/users/profile", 
+      { method: "GET"}
+    );
+
+    if (res.error) throw new Error(res.error);
+    if (!res.data?.isSuccess)
+      throw new Error(res.data?.message || "프로필 조회 실패");
+
+    return res.data.result;
+  }
+
+  async updateProfile(data: UpdateUserRequest) : Promise<ProfileData>{
+    const res = await this.apiClient.request<UpdateProfileResponse>(
+      "/users/profile",
+      {
+        method: "PUT",
+        data,
+      }
+    );
+  
+    if (res.error) throw new Error(res.error);
+    if (!res.data?.isSuccess)
+      throw new Error(res.data?.message || "프로필 수정 실패");
+  
+    return res.data.result!;
+  }
+  
 }

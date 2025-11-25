@@ -6,7 +6,7 @@ export const NavbarContainer = styled.nav`
   display: flex;
   flex-direction: column;
   align-items: center;
-  height: 120px;
+  height: 130px;
   background-color: white;
   padding: 0 20px;
   box-sizing: border-box;
@@ -14,12 +14,6 @@ export const NavbarContainer = styled.nav`
 `;
 
 export const Logo = styled(Link)`
-  font-weight: bold;
-  font-size: 24px;
-  text-decoration: none;
-  color: black;
-  cursor: pointer;
-  margin-top: 12px;
 `;
 
 export const NavCenter = styled.div`
@@ -29,12 +23,12 @@ export const NavCenter = styled.div`
   width: fit-content;
   position: relative;
   z-index: 20;
-  margin: 10px 0;
+  margin: 5px 0;
 `;
 
 export const NavItem = styled(Link)<{ $active: boolean }>`
   position: relative;
-  font-weight: ${({ $active }) => ($active ? 'bold' : 'normal')};
+  font-weight: ${({ $active }) =>  ($active ? '700' : '500')};
   color: ${({ $active }) => ($active ? 'royalblue' : 'black')};
   text-decoration: none;
   font-size: 16px;
@@ -88,7 +82,7 @@ export const NavRight = styled(Link)`
 
 export const TopLineWrapper = styled.div`
   position: absolute;
-  top: 80px;  /* NavCenter 바로 위에, 적당히 띄움 */
+  top: 90px;  /* NavCenter 바로 위에, 적당히 띄움 */
   left: 0;
   width: 100vw;
   padding: 0 20px;
@@ -99,7 +93,7 @@ export const TopLineWrapper = styled.div`
 
 export const BottomLineWrapper = styled.div`
   position: absolute;
-  top: 120px; /* NavCenter 바로 아래에, 적당히 띄움 */
+  top: 130px; /* NavCenter 바로 아래에, 적당히 띄움 */
   left: 0;
   width: 100vw;
   padding: 0 20px;

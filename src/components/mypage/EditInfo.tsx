@@ -1,43 +1,50 @@
 import styled from "styled-components";
 import { useState, useRef, useEffect } from "react";
 import { getPresignedUploadUrl, uploadFileToS3, getProfileImageUrl } from "../../api/s3Api"; 
+import { UserApi } from "../../api/userApi";
+import { useNavigate } from "react-router-dom";
+import { 
+  personalityToKorean,
+  koreanToPersonality,
+  PERSONALITY_KEYWORDS } from "../../utils/personalityUtils";
 
-const keywords = [
-  "계획적인", "활기있는", "차분한", "분석적인", "충동적인", "사교적인",
-  "열정적인", "완벽주의", "솔직한", "절제하는", "공격적인", "진지한",
-  "외톨이", "깔끔한", "질투많은", "겸손한", "우울한", "단순한",
-  "밀령이는", "욕심있는", "내성적", "외향적"
-];
+const keywords = PERSONALITY_KEYWORDS;
+const userApi = new UserApi();
 
 const EditInfo = () => {
+  const navigate= useNavigate();
+  
   // ✅ 상태 관리
   const [profileImg, setProfileImg] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null); 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // 실제 저장된 닉네임
-  const [nickname, setNickname] = useState("고양이");
-  // 입력창에서 수정 중인 닉네임
-  const [editedNickname, setEditedNickname] = useState("");
+  const [nickname, setNickname] = useState("");
 
-  const userId = "아이디123"; // 더미 아이디
-
-  const [selectedKeywords, setSelectedKeywords] = useState<string[]>([
-    "열정적인",
-    "솔직한",
-    "공격적인",
-  ]);
+  const [userId, setUserId] = useState("");
+  const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
 
   useEffect(() => {
-    const fetchProfileImage = async () => {
+    const fetchProfile = async () => {
       try {
-        const url = await getProfileImageUrl();
-        if (url) setProfileImg(url);
+        const data = await userApi.getProfile();
+
+        setNickname(data.nickname);
+        setUserId(data.email); // 서버 응답의 email을 ID로 사용
+
+        const converted = data.personalities.map(
+          (p) => personalityToKorean[p] || p
+        );
+        setSelectedKeywords(converted);
+
+        setProfileImg(data.profileImage); // presigned URL
+
       } catch (err) {
-        console.error("프로필 이미지 조회 실패:", err);
+        console.error("프로필 조회 실패:", err);
       }
     };
-    fetchProfileImage();
+    fetchProfile();
   }, []);
 
   // 프로필 사진 업로드
@@ -66,7 +73,7 @@ const EditInfo = () => {
       if (selectedKeywords.length < 3) {
         setSelectedKeywords([...selectedKeywords, keyword]);
       } else {
-        alert("성격 키워드는 최대 3개까지만 선택할 수 있습니다.");
+        alert("성격 키워드는 최대 3개까지 선택 가능합니다.");
       }
     }
   };
@@ -74,7 +81,7 @@ const EditInfo = () => {
   // ✅ 변경 사항 저장 버튼 클릭
   const handleSave = async () => {
     try {
-    // 이미지 반영
+    // 1) 프로필 이미지 반영
      if (selectedFile) {
       const uploadInfo = await getPresignedUploadUrl(selectedFile.type);
       if (!uploadInfo?.url) {
@@ -89,18 +96,26 @@ const EditInfo = () => {
         setProfileImg(newProfileUrl); // 실제 반영
       }
       setSelectedFile(null);
+      
     }
 
-    // 닉네임 반영
-    if (editedNickname.trim()) {
-      setNickname(editedNickname);
-    }
+    // 2) 닉네임 + 성격 키워드 수정
+    const personalitiesToSend = selectedKeywords.map(
+      (k) => koreanToPersonality[k]
+    );
+
+    await userApi.updateProfile({
+      nickname:  nickname.trim(), 
+      personalities: personalitiesToSend,
+    });
+
     alert("변경 사항이 저장되었습니다.");
+    navigate("/mypage/info", { replace: true });
   } catch (err) {
-    console.error("❌ 변경 사항 저장 중 오류:", err);
+    console.error("저장 오류:", err);
     alert("저장 중 오류가 발생했습니다.");
   }
-  };
+};
 
   return (
     <Card>
@@ -126,16 +141,13 @@ const EditInfo = () => {
           <UserId>{userId}</UserId>
         </InfoBlock>
       </Profile>
-
-
       <Row>
         <Label htmlFor="nickname">닉네임</Label>
         <Input
           id="nickname"
           name="nickname"
-          placeholder={nickname}                // ✅ 현재 닉네임을 placeholder로 표시
-          value={editedNickname}                // ✅ 입력값 유지
-          onChange={(e) => setEditedNickname(e.target.value)}
+          value={nickname} 
+          onChange={(e) => setNickname(e.target.value)}  
         />
       </Row>
       <Row>

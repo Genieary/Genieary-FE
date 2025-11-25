@@ -79,7 +79,6 @@ const ChatPage: React.FC = () => {
             element={
               <ChatRoom 
                 chatRooms={chatRooms}
-                getChatRoomById={getChatRoomById}
               />
             } 
           />

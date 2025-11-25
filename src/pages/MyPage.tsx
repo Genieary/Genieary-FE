@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import styled from "styled-components";
 import MyPageSidebar from "../components/mypage/MyPageSidebar";
 import MyInfo from "../components/mypage/MyInfo";
@@ -7,11 +7,13 @@ import EditInfo from "../components/mypage/EditInfo";
 import SavedGifts from "../components/mypage/SavedGifts";
 
 const MyPage = () => {
+
   return (
     <Wrapper>
       <MyPageSidebar />
       <Content>
         <Routes>
+          <Route index element={<Navigate to="info" replace />} />
           <Route path="info" element={<MyInfo />} />
           <Route path="password-check" element={<PasswordCheck />} />
           <Route path="edit" element={<EditInfo />} />

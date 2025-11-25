@@ -1,61 +1,53 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import styled from "styled-components";
-
-// 더미 데이터
-const initialGifts = [
-  {
-    id: 1,
-    name: "에어팟 4세대",
-    image:
-      "/images/airpods.png",
-    isPublic: true,
-  },
-  {
-    id: 2,
-    name: "비행기",
-    image:
-      "/images/plane.png",
-    isPublic: true,
-  },
-    {
-    id: 3,
-    name: "비행기",
-    image:
-      "/images/plane.png",
-    isPublic: false,
-  },
-    {
-    id: 4,
-    name: "비행기",
-    image:
-      "/images/plane.png",
-    isPublic: false,
-  },
-  {
-    id: 5,
-    name: "자유",
-    image: "/images/freedom.png",
-    isPublic: false,
-  },
-  
-];
+import { getSavedGifts, toggleGiftVisibility } from "../../api/recommendApi";
 
 const SavedGifts = () => {
-  const [gifts, setGifts] = useState(initialGifts);
+  const [gifts, setGifts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // 공개/비공개 토글
-  const toggleVisibility = (id: number) => {
-    setGifts((prev) =>
-      prev.map((gift) =>
-        gift.id === id ? { ...gift, isPublic: !gift.isPublic } : gift
-      )
+  useEffect(() => {
+    const fetchGifts = async () => {
+      try {
+        const res = await getSavedGifts(0, 20);
+        setGifts(res.data.result); // API가 주는 result 배열
+      } catch (err) {
+        console.error("❌ 저장된 선물 조회 실패:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchGifts();
+  }, []);
+
+  const toggleVisibility = async (recommendId: number) => {
+    try {
+      const response = await toggleGiftVisibility(recommendId);
+
+      setGifts((prev) =>
+        prev.map((gift) =>
+          gift.recommendId === recommendId
+            ? { ...gift, public: response.data?.result?.public  }
+            : gift
+        )
+      );
+    } catch (err) {
+      console.error("❌ 공개 여부 토글 실패:", err);
+    }
+  };
+
+  const deleteGift = (recommendId: number) => {
+    if (!window.confirm("정말 삭제할까요?")) return;
+    setGifts((prev) => prev.filter((gift) => gift.recommendId !== recommendId));
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <EmptyMessage>불러오는 중입니다...</EmptyMessage>
+      </Card>
     );
-  };
-
-  // 삭제
-  const deleteGift = (id: number) => {
-    setGifts((prev) => prev.filter((gift) => gift.id !== id));
-  };
+  }
 
 return (
   <Card>
@@ -64,18 +56,18 @@ return (
     ): (
     <GiftGrid>
       {gifts.map((gift) => (
-        <GiftItem key={gift.id}>
+        <GiftItem key={gift.recommendId}>
   <ImageContainer>
-    <GiftImage src={gift.image} alt={gift.name} />
+  <GiftImage src={gift.imageUrl} alt={gift.name} />
   </ImageContainer>
   <InfoRow>
     <GiftName>{gift.name}</GiftName>
     <ActionRow>
       <IconButton
         $type="eye"
-        onClick={() => toggleVisibility(gift.id)}
+        onClick={() => toggleVisibility(gift.recommendId)}
       >
-        {gift.isPublic ? <svg width="40" height="39" viewBox="0 0 40 39" fill="none" xmlns="http://www.w3.org/2000/svg">
+        {gift.public ? <svg width="40" height="39" viewBox="0 0 40 39" fill="none" xmlns="http://www.w3.org/2000/svg">
 <ellipse cx="19.5455" cy="19.5" rx="19.5455" ry="19.5" fill="#FFF5BF"/>
 <g clip-path="url(#clip0_787_816)">
 <path d="M9 20C9 20 13 12 20 12C27 12 31 20 31 20C31 20 27 28 20 28C13 28 9 20 9 20Z" stroke="#FF922B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -104,7 +96,7 @@ return (
       </IconButton>
       <IconButton
         $type="delete"
-        onClick={() => deleteGift(gift.id)}
+        onClick={() => deleteGift(gift.recommendId)}
       >
        <svg width="40" height="39" viewBox="0 0 40 39" fill="none" xmlns="http://www.w3.org/2000/svg">
 <ellipse cx="19.5455" cy="19.5" rx="19.5455" ry="19.5" fill="#FFE3E2"/>

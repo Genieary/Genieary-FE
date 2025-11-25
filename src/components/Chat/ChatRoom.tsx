@@ -9,45 +9,60 @@ import { formatDateSeparator, isSameDate } from '../../utils/chatUtils';
 import { ReactComponent as MenuSvg } from '../../assets/list.svg';
 import { ReactComponent as CameraSvg } from '../../assets/camera.svg';
 import { ReactComponent as SendSvg } from '../../assets/arrow-up.svg';
+import { ChatApi } from "../../api/chatApi";
+import { AuthService } from '../../services/authService';
 
 interface ChatRoomProps {
   chatRooms: ChatRoomResponse[];
-  getChatRoomById: (id: string) => ChatRoomResponse | undefined;
 }
 
-const ChatRoom: React.FC<ChatRoomProps> = ({ 
-  chatRooms, 
-  getChatRoomById 
-}) => {
+const ChatRoom: React.FC<ChatRoomProps> = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
   const [inputValue, setInputValue] = useState('');
   const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([]);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [currentRoom, setCurrentRoom] = useState<ChatRoomResponse | null>(null);
+
+  const chatApi = new ChatApi();
+
   const { sendMessage, subscribeToRoom, unsubscribeFromRoom, markAsRead, isConnected } = useWebSocket();
 
   // DB에서 기존 메시지 로드
   const { messages: dbMessages, loading: messagesLoading, fetchMessages } = useChatMessages(id || null);
   
-  const currentChatRoom = id ? getChatRoomById(id) : null;
-  const currentUserId = parseInt(localStorage.getItem('userId') || '0');
+  const currentUserId= AuthService.getUserId;
 
-   // DB 메시지를 UI 형태로 변환
-   const convertDbMessages = useCallback((messages: any[]): Message[] => {
-    return messages.map(msg => ({
-      id: msg.id.toString(),
-      content: msg.message,
-      timestamp: new Date(msg.sentAt).toLocaleTimeString('ko-KR', { 
-        hour: 'numeric', 
-        minute: '2-digit', 
-        hour12: true 
-      }),
-      sentAt: msg.sentAt,
-      isMe: msg.senderId === currentUserId,
-      type: 'text'
-    }));
-  }, [currentUserId]);
+  // 채팅방 조회
+useEffect(() => {
+  if (!id) return;
 
+  const fetchRoom = async () => {
+    try {
+      const res = await chatApi.getChatRoom(id);
+
+      if (!res.data) {
+        setCurrentRoom(null);
+        return;
+      }
+      
+      setCurrentRoom(res.data);
+    } catch (err) {
+      console.error(err);
+      setCurrentRoom(null);
+    }
+  };
+
+  fetchRoom();
+}, [id]);
+
+   // 채팅방 변경 시 DB 메시지 로드 및 실시간 메시지 초기화
+   useEffect(() => {
+    if (!id) return;
+    
+    fetchMessages();
+  }, [id, fetchMessages]); 
 
   // 실시간 메시지 처리
   const handleNewMessage = useCallback((message: any) => {
@@ -70,13 +85,6 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
     setRealtimeMessages(prev => [...prev, newMessage]);
   }, [currentUserId]);
 
-   // 채팅방 변경 시 DB 메시지 로드 및 실시간 메시지 초기화
-   useEffect(() => {
-    if (!id) return;
-    
-    fetchMessages();
-  }, [id, fetchMessages]); 
-
   // 방 구독 및 읽음 처리
   useEffect(() => {
     if (!id || !isConnected) return;
@@ -91,12 +99,28 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
     };
   }, [id, isConnected, handleNewMessage, subscribeToRoom, unsubscribeFromRoom, markAsRead]);
 
+    //  // DB 메시지를 UI 형태로 변환
+   const convertDbMessages = useCallback((messages: any[]): Message[] => {
+    return messages.map(msg => ({
+      id: msg.id.toString(),
+      content: msg.message,
+      timestamp: new Date(msg.sentAt).toLocaleTimeString('ko-KR', { 
+        hour: 'numeric', 
+        minute: '2-digit', 
+        hour12: true 
+      }),
+      sentAt: msg.sentAt,
+      isMe: msg.senderId === currentUserId,
+      type: 'text'
+    }));
+  }, [currentUserId]);
+
   // 스크롤 자동 이동
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [realtimeMessages, dbMessages]);
 
-  if (!currentChatRoom) {
+  if (!currentRoom) {
     return <ChatRoomContainer>채팅방을 찾을 수 없습니다.</ChatRoomContainer>;
   }
 
@@ -104,8 +128,8 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
     return <ChatRoomContainer>메시지를 불러오는 중...</ChatRoomContainer>;
   }
 
-  const displayName = currentChatRoom.otherUser.nickname || `user${currentChatRoom.otherUser.id}`;
-  const profileImage = currentChatRoom.otherUser.profileImage; 
+  const displayName = currentRoom.otherUser.nickname || `user${currentRoom.otherUser.id}`;
+  const profileImage = currentRoom.otherUser.profileImage;
    
   // DB 메시지 + 실시간 메시지 통합
   const allMessages = [
@@ -191,9 +215,9 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
                   {/* 상대방 메시지일 때만 프로필 표시 */}
                   {!isMe && (
                     <ProfileColumn>
-                      {currentChatRoom.otherUser.profileImage ? (
+                      {profileImage ? (
                         <ProfileImg
-                          src={currentChatRoom.otherUser.profileImage}
+                          src={profileImage}
                           alt={`${displayName}의 프로필`}
                         />
                       ) : (

@@ -3,16 +3,10 @@ import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import { UserApi } from "../api/userApi";
 import { toast } from "react-toastify";
+import { koreanToPersonality, PERSONALITY_KEYWORDS } from "../utils/personalityUtils";
 
 const GENDER_OPTIONS = ["선택안함", "남자", "여자"] as const;
-const KEYWORDS = [
-  "계획적인", "활기있는", "차분한",
-  "충동적인", "사교적인", "열정적인",
-  "완벽주의", "솔직한", "절제하는", "진지한",
-  "외톨이", "깔끔한", "질투많은", "겸손한", "우울한",
-  "단순한", "덜렁이는", "욕심있는", "내성적", "외향적",
-];
-
+const KEYWORDS = PERSONALITY_KEYWORDS;
 const MAX_KEYWORDS = 3;
 
 const OnboardingProfilePage: React.FC = () => {
@@ -79,32 +73,7 @@ const OnboardingProfilePage: React.FC = () => {
       if (gender === "남자") genderValue = "MALE";
       if (gender === "여자") genderValue = "FEMALE";
   
-      const personalityMap: Record<string, string> = {
-        계획적인: "PLANNED",
-        활기있는: "ENERGETIC",
-        사교적인: "SOCIABLE",
-        차분한: "CALM",
-        분석적인: "ANALYTICAL",
-        충동적인: "IMPULSIVE",
-        진지한: "SERIOUS",
-        열정적인: "PASSIONATE",
-        완벽주의: "PERFECTIONIST",
-        솔직한: "HONEST",
-        절제하는: "RESTRAINED",
-        공격적인: "AGGRESSIVE",
-        깔끔한: "NEAT",
-        질투많은: "JEALOUS",
-        검소한: "FRUGAL",
-        우울한: "MELANCHOLIC",
-        덜렁이는: "CARELESS",
-        욕심있는: "GREEDY",
-        내성적: "INTROVERTED",
-        외향적: "EXTROVERTED",
-        단순한: "SIMPLE",
-        외톨이: "LONER",
-      };
-  
-      const personalities = keywords.map((k) => personalityMap[k]).filter(Boolean);
+      const personalities = keywords.map((k) => koreanToPersonality[k]);
   
       await userApi.createProfile({
         nickname: nickname.trim(),
