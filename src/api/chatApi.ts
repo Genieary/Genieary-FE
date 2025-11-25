@@ -35,4 +35,10 @@ export class ChatApi {
       }
     );
   }
+
+  async getChatRoom(roomUuid: string) {
+    return await this.apiClient.request<ChatRoomResponse>(`/chat/rooms/${roomUuid}`, {
+      method: "GET"
+    });
+  }
 }
