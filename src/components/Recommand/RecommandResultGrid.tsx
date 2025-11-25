@@ -6,6 +6,7 @@ import HeartDefaultIcon from "../../assets/heart-default.svg";
 import HeartLikedIcon from "../../assets/heart-liked.svg";
 import BrokenHeartDefaultIcon from "../../assets/broken-heart-default.svg";
 import BrokenHeartDislikedIcon from "../../assets/broken-heart-disliked.svg";
+import { API_BASE_URL } from "../../config";
 
 export interface ResultItem {
   id: string;
@@ -113,7 +114,7 @@ const RecommandResultGrid: React.FC<Props> = ({ resultData }) => {
     }
 
     try {
-      const res = await fetch(`${API_BASE}/recommend/${id}/like`, {
+      const res = await fetch(`${API_BASE_URL}/recommend/${id}/like`, {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -140,7 +141,7 @@ const RecommandResultGrid: React.FC<Props> = ({ resultData }) => {
     }
 
     try {
-      const res = await fetch(`${API_BASE}/recommend/${id}/dislike`, {
+      const res = await fetch(`${API_BASE_URL}/recommend/${id}/dislike`, {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}` },
       });
