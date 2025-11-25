@@ -6,7 +6,7 @@ export const NavbarContainer = styled.nav`
   display: flex;
   flex-direction: column;
   align-items: center;
-  height: 120px;
+  height: 130px;
   background-color: white;
   padding: 0 20px;
   box-sizing: border-box;
