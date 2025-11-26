@@ -6,7 +6,7 @@ export const NavbarContainer = styled.nav`
   display: flex;
   flex-direction: column;
   align-items: center;
-  height: 130px;
+  height: 110px;
   background-color: white;
   padding: 0 20px;
   box-sizing: border-box;
@@ -14,6 +14,8 @@ export const NavbarContainer = styled.nav`
 `;
 
 export const Logo = styled(Link)`
+   margin-top: 12px;
+   margin-bottom: 5px;
 `;
 
 export const NavCenter = styled.div`
@@ -82,7 +84,7 @@ export const NavRight = styled(Link)`
 
 export const TopLineWrapper = styled.div`
   position: absolute;
-  top: 90px;  /* NavCenter 바로 위에, 적당히 띄움 */
+  top: 73px;  /* NavCenter 바로 위에, 적당히 띄움 */
   left: 0;
   width: 100vw;
   padding: 0 20px;
@@ -93,7 +95,7 @@ export const TopLineWrapper = styled.div`
 
 export const BottomLineWrapper = styled.div`
   position: absolute;
-  top: 130px; /* NavCenter 바로 아래에, 적당히 띄움 */
+  top: 112px; /* NavCenter 바로 아래에, 적당히 띄움 */
   left: 0;
   width: 100vw;
   padding: 0 20px;

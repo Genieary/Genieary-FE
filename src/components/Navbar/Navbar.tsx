@@ -26,9 +26,9 @@ const Navbar = () => {
     <NavbarContainer>
       <Logo to="/">
         <img
-          src="/images/genieary-logo-2.png"
+          src="/images/genieary-logo-3.png"
           alt="Genieary Logo"
-          style={{ height: "90px" }}
+          style={{ height: "55px" }}
         />
       </Logo>
 
