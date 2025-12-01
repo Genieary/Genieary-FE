@@ -5,7 +5,6 @@ import styled from 'styled-components';
 const menuItems = [
   { name: '내 정보', path: '/mypage/info' },
   { name: '저장된 선물', path: '/mypage/gifts' },
-  { name: '저장된 하루', path: '/mypage/days' },
 ];
 
 const MyPageSidebar = () => {
@@ -51,7 +50,7 @@ const SidebarContainer = styled.div`
   flex-direction: column;
   gap: 20px;
   align-items: center;
-  height: 105px;
+  height: 60px;
   flex-shrink: 0; 
 `;
 
