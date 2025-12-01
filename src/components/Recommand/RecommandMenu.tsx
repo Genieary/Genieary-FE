@@ -1,10 +1,10 @@
 import React from "react";
 import styled from "styled-components";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export const leftTabs = [
   { key: "basic", label: "기본 추천", route: "/recommend" },
-  { key: "anniversary", label: "기념일 추천", route: "/recommend/anniversary" },
+  //{ key: "anniversary", label: "기념일 추천", route: "/recommend/anniversary" },
   { key: "friend", label: "친구 맞춤 선물 추천", route: "/recommend/friend" },
 ] as const;
 
@@ -61,6 +61,10 @@ interface Props {
 
 const RecommandMenu: React.FC<Props> = ({ tab, setTab }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const activeKey: LeftTabKey =
+    location.pathname.startsWith("/recommend/friend") ? "friend" : "basic";
 
   const handleClick = (key: LeftTabKey, route: string) => {
     setTab(key);
@@ -74,7 +78,7 @@ const RecommandMenu: React.FC<Props> = ({ tab, setTab }) => {
           {leftTabs.map((item) => (
             <MenuListItem
               key={item.key}
-              selected={tab === item.key}
+              selected={activeKey === item.key}
               onClick={() => handleClick(item.key, item.route)}
             >
               {item.label}

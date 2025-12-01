@@ -149,7 +149,7 @@ const FriendProfileContent: React.FC = () => {
 
           <Right>
             <LampIllustration />
-            <RecommendButton onClick={() => navigate(`/recommend?target=${friendIdParam ?? ''}`)}>
+            <RecommendButton onClick={() => navigate(`/recommend/friend/${friendIdParam ?? ''}`)}>
               친구 맞춤 선물 추천 받으러가기
             </RecommendButton>
           </Right>

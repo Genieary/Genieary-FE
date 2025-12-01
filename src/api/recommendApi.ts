@@ -26,3 +26,8 @@ export const toggleGiftVisibility = async (recommendId: number) : Promise<any> =
     method: "PATCH",
   });
 };
+
+export const getFriendGiftRecommendations = async (friendId: number) => {
+  const res = await api.post<ApiResponse<any>>(`/recommend/${friendId}`);
+  return res.data.result;
+};

@@ -98,9 +98,10 @@ const IconImage = styled.img`
 
 interface Props {
   resultData: ResultItem[];
+  showActions?: boolean;
 }
 
-const RecommandResultGrid: React.FC<Props> = ({ resultData }) => {
+const RecommandResultGrid: React.FC<Props> = ({ resultData, showActions = true, }) => {
   const [likeStatus, setLikeStatus] = useState<Record<string, LikeStatus>>({});
 
   const token = localStorage.getItem("accessToken");
@@ -173,17 +174,19 @@ const RecommandResultGrid: React.FC<Props> = ({ resultData }) => {
             </ResultCard>
             <InfoRow>
               <ResultLabel>{item.label}</ResultLabel>
-              <LikeRow>
-                <IconButton onClick={() => handleLike(item.id)}>
-                  <IconImage src={isLiked ? HeartLikedIcon : HeartDefaultIcon} alt="좋아요" />
-                </IconButton>
-                <IconButton onClick={() => handleDislike(item.id)}>
-                  <IconImage
-                    src={isDisliked ? BrokenHeartDislikedIcon : BrokenHeartDefaultIcon}
-                    alt="싫어요"
-                  />
-                </IconButton>
-              </LikeRow>
+              {showActions && (
+                <LikeRow>
+                  <IconButton onClick={() => handleLike(item.id)}>
+                    <IconImage src={isLiked ? HeartLikedIcon : HeartDefaultIcon} alt="좋아요" />
+                  </IconButton>
+                  <IconButton onClick={() => handleDislike(item.id)}>
+                    <IconImage
+                      src={isDisliked ? BrokenHeartDislikedIcon : BrokenHeartDefaultIcon}
+                      alt="싫어요"
+                    />
+                  </IconButton>
+                </LikeRow>
+              )}
             </InfoRow>
           </CardWrapper>
         );
