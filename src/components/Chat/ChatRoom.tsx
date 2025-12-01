@@ -32,7 +32,7 @@ const ChatRoom: React.FC<ChatRoomProps> = () => {
   // DB에서 기존 메시지 로드
   const { messages: dbMessages, loading: messagesLoading, fetchMessages } = useChatMessages(id || null);
   
-  const currentUserId= AuthService.getUserId;
+  const currentUserId= AuthService.getUserId(); 
 
   // 채팅방 조회
 useEffect(() => {
