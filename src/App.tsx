@@ -20,6 +20,7 @@ import MyPage from './pages/MyPage';
 import OnboardingProfilePage from "./pages/OnboardingProfilePage";
 import OnboardingInterestsPage from "./pages/OnboardingInterestsPage";
 import ProtectedLayer from './components/ProtectedLayer';
+import FriendRecommendPage from "./pages/FriendRecommendPage";
 
 function App() {
 
@@ -33,6 +34,7 @@ function App() {
         <Route path="/api/auth/kakao/callback" element={<OAuthKakaoCallback />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/recommend" element={<RecommendPage />} />
+        <Route path="/recommend/friend/:friendId" element={<FriendRecommendPage />} />
 
         <Route element={<ProtectedLayer />}>
           <Route path="/recommend/result/:category" element={<RecommandResultTemplate />} />
